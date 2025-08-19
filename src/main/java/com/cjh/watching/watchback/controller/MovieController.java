@@ -1,5 +1,7 @@
 package com.cjh.watching.watchback.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.dev33.satoken.annotation.SaIgnore;
 import com.cjh.watching.watchback.entity.Movie;
 import com.cjh.watching.watchback.service.MovieService;
 import jakarta.annotation.Resource;
@@ -19,6 +21,7 @@ import java.util.List;
 public class MovieController {
     @Resource
     private MovieService movieService;
+    @SaCheckLogin
     @RequestMapping("/getMovieRecent")
     public List<Movie> getMovieRecent() {
         return movieService.getMovieRecent();

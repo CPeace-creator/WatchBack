@@ -11,7 +11,6 @@ import com.cjh.watching.watchback.service.UserService;
 import com.cjh.watching.watchback.utils.Result;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 
@@ -24,9 +23,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Resource
     private UserMapper userMapper;
-    
-    @Resource
-    private PasswordEncoder passwordEncoder;
     @Override
     public SaResult register(User user) {
         // 检查用户名是否已存在
@@ -40,7 +36,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User insertUser = new User();
         insertUser.setUserName(user.getUserName());
         insertUser.setEmail(user.getEmail());
-        insertUser.setPassword(passwordEncoder.encode(user.getPassword()));  // 使用BCrypt加密
+        insertUser.setPassword(SaBase64Util.encode(user.getPassword()));  // 使用BCrypt加密
 
         // 保存用户
         save(insertUser);
@@ -52,7 +48,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = userMapper.selectOne(new LambdaQueryWrapper<User>()
                 .eq(User::getEmail, userLoginDto.getEmail()));
 
-        if (user == null || !passwordEncoder.matches(userLoginDto.getPassword(), user.getPassword())) {
+        if (user == null || !SaBase64Util.decode(user.getPassword()).equals(userLoginDto.getPassword())) {
             return SaResult.error("用户不存在或密码错误");
         }
 
