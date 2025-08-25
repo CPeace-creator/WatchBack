@@ -30,8 +30,6 @@ public class Movie {
     private String backdropPath;
     private String overview;
     private Integer video;
-    private LocalDateTime createdTime;
-    private LocalDateTime updatedTime;
     private String genreIds;
     private Integer ifDel;
     // Getter和Setter方法
@@ -139,21 +137,6 @@ public class Movie {
         this.video = video;
     }
 
-    public LocalDateTime getCreatedTime() {
-        return createdTime;
-    }
-
-    public void setCreatedTime(LocalDateTime createdTime) {
-        this.createdTime = createdTime;
-    }
-
-    public LocalDateTime getUpdatedTime() {
-        return updatedTime;
-    }
-
-    public void setUpdatedTime(LocalDateTime updatedTime) {
-        this.updatedTime = updatedTime;
-    }
 
     public String getGenreIds() {
         return genreIds;
