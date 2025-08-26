@@ -1,5 +1,6 @@
 package com.cjh.watching.watchback.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.context.AnalysisContext;
@@ -7,24 +8,38 @@ import com.alibaba.excel.read.listener.ReadListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cjh.watching.watchback.entity.Movie;
+import com.cjh.watching.watchback.entity.TVShow;
+import com.cjh.watching.watchback.entity.UserMediaCollection;
 import com.cjh.watching.watchback.mapper.MovieMapper;
+import com.cjh.watching.watchback.mapper.TVShowMapper;
 import com.cjh.watching.watchback.service.MovieService;
+import com.cjh.watching.watchback.service.UserMediaCollectionService;
+import com.cjh.watching.watchback.utils.ImportResult;
+import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.lang.reflect.RecordComponent;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
-/**
+/** 
  * - @author Cjh。
  * - @date 2025/8/14 13:53。
  **/
 @Service
 public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements MovieService {
+    
+    private static final Logger log = LoggerFactory.getLogger(MovieServiceImpl.class);
+
+    @Resource
+    private UserMediaCollectionService userMediaCollectionService;
+    
+    @Resource
+    private TVShowMapper tvShowMapper;
 
 
     @Override
@@ -40,18 +55,189 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                     !file.getOriginalFilename().endsWith(".xls")) {
                 return SaResult.error("仅支持Excel文件(.xlsx/.xls)");
             }
-
-            // 读取Excel内容
-            List<String> title = read(file);
-
+            
+            // 获取当前登录用户ID
+            Long userId = Long.valueOf(StpUtil.getLoginIdAsString());
+            
+            // 获取导入的总数
+            int importedCount = getImportedCount(file);
+            
+            // 读取文件中的所有标题
+            List<String> allTitles = read(file);
+            
+            // 创建导入结果对象
+            ImportResult result = new ImportResult();
+            result.setTotalCount(importedCount);
+            
+            // 分别处理电影和电视剧
+            try{
+                handleMoviesImport(allTitles, userId, result);
+                handleTVShowsImport(allTitles, userId, result);
+            }catch (Exception e){
+                return SaResult.error("导入失败: " + e.getMessage());
+            }
+            // 优化未找到列表：移除那些在另一类别中已找到的标题
+            // 从未找到的电影列表中移除那些在电视剧中已找到的标题
+            List<String> refinedNotFoundMovies = result.getNotFoundMovieTitles().stream()
+                    .filter(title -> !isTitleFoundInTVShows(title))
+                    .collect(Collectors.toList());
+            result.setNotFoundMovieTitles(refinedNotFoundMovies);
+            
+            // 从未找到的电视剧列表中移除那些在电影中已找到的标题
+            List<String> refinedNotFoundTVShows = result.getNotFoundTVShowTitles().stream()
+                    .filter(title -> !isTitleFoundInMovies(title))
+                    .collect(Collectors.toList());
+            result.setNotFoundTVShowTitles(refinedNotFoundTVShows);
+            
+            // 记录导入结果日志
+            log.info("用户 {} 导入媒体结果: 总数={}, 成功电影数={}, 成功电视剧数={}, 未找到电影数={}, 未找到电视剧数={}",
+                    userId, result.getTotalCount(), result.getSuccessMovieCount(), result.getSuccessTVShowCount(),
+                    result.getNotFoundMovieTitles().size(), result.getNotFoundTVShowTitles().size());
+            
             // 返回结果
-            return SaResult.ok("Excel读取成功")
-                    .setData(title)
-                    .set("rowCount", title.size());
+            return SaResult.ok()
+                    .setData(result);
         } catch (Exception e) {
-            return SaResult.error("Excel读取失败: " + e.getMessage());
+            return SaResult.error("导入失败: " + e.getMessage());
         }
     }
+
+    /**
+     * 处理电影导入
+     */
+    private void handleMoviesImport(List<String> titles, Long userId, ImportResult result) {
+        try {
+            // 查找数据库中已存在的电影
+            List<Movie> existingMovies = baseMapper.selectList(new LambdaQueryWrapper<Movie>()
+                    .in(Movie::getTitle, titles)
+                    .or().in(Movie::getOriginalTitle, titles)
+            );
+            
+            // 提取已存在电影的标题（包括原始标题）
+            Set<String> existingMovieTitles = new HashSet<>();
+            Map<String, Movie> titleToMovieMap = new HashMap<>();
+            for (Movie movie : existingMovies) {
+                existingMovieTitles.add(movie.getTitle());
+                existingMovieTitles.add(movie.getOriginalTitle());
+                titleToMovieMap.put(movie.getTitle(), movie);
+                titleToMovieMap.put(movie.getOriginalTitle(), movie);
+            }
+            
+            // 找出不存在的电影标题
+            List<String> notFoundMovies = titles.stream()
+                    .filter(title -> !existingMovieTitles.contains(title))
+                    .collect(Collectors.toList());
+            
+            // 批量添加用户收藏记录
+            List<UserMediaCollection> collections = new ArrayList<>();
+            for (String title : titles) {
+                if (titleToMovieMap.containsKey(title)) {
+                    Movie movie = titleToMovieMap.get(title);
+                    
+                    // 检查是否已收藏
+                    UserMediaCollection existingCollection = userMediaCollectionService.getOne(new LambdaQueryWrapper<UserMediaCollection>()
+                            .eq(UserMediaCollection::getUserId, userId)
+                            .eq(UserMediaCollection::getMediaType, 1) // 1-电影
+                            .eq(UserMediaCollection::getMediaId, movie.getMovieId())
+                    );
+                    
+                    if (existingCollection == null) {
+                        UserMediaCollection collection = new UserMediaCollection();
+                        collection.setUserId(userId);
+                        collection.setMediaType(1); // 1-电影
+                        collection.setMediaId(movie.getMovieId());
+                        collection.setTitle(movie.getTitle());
+                        collection.setTmdbId(movie.getTmdbId());
+                        collection.setStatus(2); // 1-已收藏
+                        collection.setCreatedTime(LocalDateTime.now());
+                        collection.setUpdatedTime(LocalDateTime.now());
+                        collections.add(collection);
+                    }
+                }
+            }
+            
+            // 批量保存
+            if (!collections.isEmpty()) {
+                userMediaCollectionService.saveBatch(collections);
+                result.setSuccessMovieCount(collections.size());
+            }
+            
+            result.setNotFoundMovieTitles(notFoundMovies);
+        } catch (Exception e) {
+            log.error("处理电影导入失败", e);
+            result.setMovieErrorMessage(e.getMessage());
+            throw e;
+        }
+    }
+    
+    /**
+     * 处理电视剧导入
+     */
+    private void handleTVShowsImport(List<String> titles, Long userId, ImportResult result) {
+        try {
+            // 查找数据库中已存在的电视剧
+            List<TVShow> existingTVShows = tvShowMapper.selectList(new LambdaQueryWrapper<TVShow>()
+                    .in(TVShow::getName, titles)
+                    .or().in(TVShow::getOriginalName, titles)
+            );
+            
+            // 提取已存在电视剧的标题（包括原始标题）
+            Set<String> existingTVShowTitles = new HashSet<>();
+            Map<String, TVShow> titleToTVShowMap = new HashMap<>();
+            for (TVShow tvShow : existingTVShows) {
+                existingTVShowTitles.add(tvShow.getName());
+                existingTVShowTitles.add(tvShow.getOriginalName());
+                titleToTVShowMap.put(tvShow.getName(), tvShow);
+                titleToTVShowMap.put(tvShow.getOriginalName(), tvShow);
+            }
+            
+            // 找出不存在的电视剧标题
+            List<String> notFoundTVShows = titles.stream()
+                    .filter(title -> !existingTVShowTitles.contains(title))
+                    .collect(Collectors.toList());
+            
+            // 批量添加用户收藏记录
+            List<UserMediaCollection> collections = new ArrayList<>();
+            for (String title : titles) {
+                if (titleToTVShowMap.containsKey(title)) {
+                    TVShow tvShow = titleToTVShowMap.get(title);
+                    
+                    // 检查是否已收藏
+                    UserMediaCollection existingCollection = userMediaCollectionService.getOne(new LambdaQueryWrapper<UserMediaCollection>()
+                            .eq(UserMediaCollection::getUserId, userId)
+                            .eq(UserMediaCollection::getMediaType, 2) // 2-电视剧
+                            .eq(UserMediaCollection::getMediaId, tvShow.getShowId().longValue())
+                    );
+                    
+                    if (existingCollection == null) {
+                        UserMediaCollection collection = new UserMediaCollection();
+                        collection.setUserId(userId);
+                        collection.setMediaType(2); // 2-电视剧
+                        collection.setMediaId(tvShow.getShowId().longValue());
+                        collection.setTmdbId(tvShow.getTmdbId());
+                        collection.setTitle(tvShow.getName());
+                        collection.setStatus(2); // 1-已收藏
+                        collection.setCreatedTime(LocalDateTime.now());
+                        collection.setUpdatedTime(LocalDateTime.now());
+                        collections.add(collection);
+                    }
+                }
+            }
+            
+            // 批量保存
+            if (!collections.isEmpty()) {
+                userMediaCollectionService.saveBatch(collections);
+                result.setSuccessTVShowCount(collections.size());
+            }
+            
+            result.setNotFoundTVShowTitles(notFoundTVShows);
+        } catch (Exception e) {
+            log.error("处理电视剧导入失败", e);
+            result.setTvShowErrorMessage(e.getMessage());
+            throw e;
+        }
+    }
+
 
     /**
      * 使用EasyExcel读取Excel文件内容
@@ -83,5 +269,44 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                 .doRead();
 
         return result;
+    }
+    
+    /**
+     * 获取Excel中电影的总数
+     */
+    private int getImportedCount(MultipartFile file) throws IOException {
+        return read(file).size();
+    }
+    
+    /**
+     * 检查标题是否在电影中找到
+     */
+    private boolean isTitleFoundInMovies(String title) {
+        try {
+            List<Movie> movies = baseMapper.selectList(new LambdaQueryWrapper<Movie>()
+                    .eq(Movie::getTitle, title)
+                    .or().eq(Movie::getOriginalTitle, title)
+            );
+            return !movies.isEmpty();
+        } catch (Exception e) {
+            log.error("检查标题是否在电影中找到失败", e);
+            return false;
+        }
+    }
+    
+    /**
+     * 检查标题是否在电视剧中找到
+     */
+    private boolean isTitleFoundInTVShows(String title) {
+        try {
+            List<TVShow> tvShows = tvShowMapper.selectList(new LambdaQueryWrapper<TVShow>()
+                    .eq(TVShow::getName, title)
+                    .or().eq(TVShow::getOriginalName, title)
+            );
+            return !tvShows.isEmpty();
+        } catch (Exception e) {
+            log.error("检查标题是否在电视剧中找到失败", e);
+            return false;
+        }
     }
 }

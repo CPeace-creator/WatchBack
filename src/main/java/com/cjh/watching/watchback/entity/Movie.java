@@ -32,6 +32,7 @@ public class Movie {
     private Integer video;
     private String genreIds;
     private Integer ifDel;
+    private Integer tmdbId;
     // Getter和Setter方法
     public Long getMovieId() {
         return movieId;
