@@ -22,9 +22,9 @@ public class MovieController {
     @Resource
     private MovieService movieService;
     @SaCheckLogin
-    @RequestMapping("/getMovieRecent")
-    public List<Movie> getMovieRecent() {
-        return movieService.getMovieRecent();
+    @RequestMapping("/getByRecent")
+    public List<Movie> getByRecent() {
+        return movieService.getByRecent();
     }
 
     @SaCheckLogin

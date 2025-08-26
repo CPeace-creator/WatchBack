@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
@@ -36,12 +37,11 @@ public class TVShow {
     
     private String originalLanguage;
     
-    @TableField(typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class)
-    private JsonNode genreIds;
+    private String genreIds;
     
-    private Float popularity;
+    private BigDecimal popularity;
     
-    private Float voteAverage;
+    private BigDecimal voteAverage;
     
     private Integer voteCount;
     

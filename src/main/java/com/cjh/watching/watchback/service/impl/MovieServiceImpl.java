@@ -12,6 +12,7 @@ import com.cjh.watching.watchback.entity.TVShow;
 import com.cjh.watching.watchback.entity.UserMediaCollection;
 import com.cjh.watching.watchback.mapper.MovieMapper;
 import com.cjh.watching.watchback.mapper.TVShowMapper;
+import com.cjh.watching.watchback.mapper.UserMediaCollectionMapper;
 import com.cjh.watching.watchback.service.MovieService;
 import com.cjh.watching.watchback.service.UserMediaCollectionService;
 import com.cjh.watching.watchback.utils.ImportResult;
@@ -37,14 +38,18 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
 
     @Resource
     private UserMediaCollectionService userMediaCollectionService;
+
+    @Resource
+    private UserMediaCollectionMapper userMediaCollectionMapper;
     
     @Resource
     private TVShowMapper tvShowMapper;
 
 
     @Override
-    public List<Movie> getMovieRecent() {
-        return null;
+    public List<Movie> getByRecent() {
+
+        return userMediaCollectionMapper.getByRecent(StpUtil.getLoginIdAsString());
     }
 
     @Override

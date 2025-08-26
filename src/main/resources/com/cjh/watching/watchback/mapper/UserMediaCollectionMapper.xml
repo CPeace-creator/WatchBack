@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cjh.watching.watchback.mapper.UserMediaCollectionMapper">
+    <select id="getByRecent" resultType="com.cjh.watching.watchback.dto.MovieDto">
+        SELECT
+            umc.tmdb_id,
+            umc.original_language,
+            umc.overview,
+            umc.vote_average,
+            umc.vote_count,
+            umc.popularity,
+            umc.poster_path,
+            umc.backdrop_path,
+            mc.created_time
+        FROM user_media_collection mc
+                 LEFT JOIN (
+            SELECT
+                movie_id as media_id,
+                tmdb_id,
+                original_language,
+                overview,
+                vote_average,
+                vote_count,
+                popularity,
+                poster_path,
+                backdrop_path
+            FROM movies
+            UNION ALL
+            SELECT
+                show_id as media_id,
+                tmdb_id,
+                original_language,
+                overview,
+                vote_average,
+                vote_count,
+                popularity,
+                poster_path,
+                backdrop_path
+            FROM tv_shows
+        ) umc ON umc.media_id = mc.media_id
+        WHERE mc.user_id = #{userId}
+          AND mc.media_type IN (1, 2)
+          AND mc.created_time >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    </select>
+
+</mapper>
