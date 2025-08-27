@@ -373,15 +373,28 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
 
     @Override
     public SaResult saveMovie(MovieDto movie) {
+        // 检查是否已经存在相同的记录
         String userId = StpUtil.getLoginIdAsString();
+        UserMediaCollection existingCollection = userMediaCollectionMapper.selectOne(
+                new LambdaQueryWrapper<UserMediaCollection>()
+                        .eq(UserMediaCollection::getUserId, Long.valueOf(userId))
+                        .eq(UserMediaCollection::getMediaType, movie.getMediaType())
+                        .eq(UserMediaCollection::getMediaId, movie.getId())
+        );
+        if (existingCollection != null) {
+            // 如果已经存在，返回提示信息
+            return SaResult.error("该影片已经看过了");
+        }
         UserMediaCollection collection = new UserMediaCollection();
         collection.setUserId(Long.valueOf(userId));
         collection.setCreatedTime(LocalDateTime.now());
         collection.setStatus(MovieStatusEnum.HASWATCHED.getValue());
         collection.setMediaType(movie.getMediaType());
+        collection.setMediaId(movie.getId());
         collection.setTmdbId(movie.getTmdbId());
         collection.setTitle(movie.getTitle());
         userMediaCollectionMapper.insert(collection);
         return SaResult.ok("导入影片成功!");
+
     }
 }
