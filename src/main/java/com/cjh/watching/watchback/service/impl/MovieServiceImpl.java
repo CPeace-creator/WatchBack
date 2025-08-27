@@ -55,7 +55,7 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
 
 
     @Override
-    public List<Movie> getByRecent() {
+    public List<MovieDto> getByRecent() {
 
         return userMediaCollectionMapper.getByRecent(StpUtil.getLoginIdAsString());
     }

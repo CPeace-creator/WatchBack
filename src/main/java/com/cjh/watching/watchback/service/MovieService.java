@@ -15,7 +15,7 @@ import java.util.List;
  * - @date 2025/8/14 13:51。
  **/
 public interface MovieService extends IService<Movie> {
-    List<Movie> getByRecent();
+    List<MovieDto> getByRecent();
 
     SaResult importMovie(MultipartFile file);
 

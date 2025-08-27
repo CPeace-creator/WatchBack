@@ -31,7 +31,7 @@ public class MovieController {
      */
     @SaCheckLogin
     @RequestMapping("/getByRecent")
-    public List<Movie> getByRecent() {
+    public List<MovieDto> getByRecent() {
         return movieService.getByRecent();
     }
 

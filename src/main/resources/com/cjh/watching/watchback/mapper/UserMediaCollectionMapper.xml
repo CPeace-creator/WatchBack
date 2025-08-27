@@ -12,7 +12,9 @@
             umc.popularity,
             umc.poster_path,
             umc.backdrop_path,
-            mc.created_time
+            mc.created_time,
+            umc.media_type,
+            umc.genre_ids
         FROM user_media_collection mc
                  LEFT JOIN (
             SELECT
@@ -25,7 +27,9 @@
                 vote_count,
                 popularity,
                 poster_path,
-                backdrop_path
+                backdrop_path,
+                1 as media_type,
+                genre_ids
             FROM movies
             UNION ALL
             SELECT
@@ -38,11 +42,13 @@
                 vote_count,
                 popularity,
                 poster_path,
-                backdrop_path
+                backdrop_path,
+                2 as media_type,
+                genre_ids
             FROM tv_shows
         ) umc ON umc.media_id = mc.media_id
         WHERE mc.user_id = #{userId}
-          AND mc.media_type IN (1, 2)
+          AND mc.media_type IN (2)
           AND mc.created_time >= DATE_SUB(NOW(), INTERVAL 7 DAY)
     </select>
 
