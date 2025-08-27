@@ -31,7 +31,7 @@
                 1 as media_type,
                 genre_ids
             FROM movies
-            UNION ALL
+            UNION
             SELECT
                 show_id as media_id,
                 tmdb_id,
@@ -46,10 +46,11 @@
                 2 as media_type,
                 genre_ids
             FROM tv_shows
-        ) umc ON umc.media_id = mc.media_id
+        ) umc ON umc.media_id = mc.media_id AND umc.media_type = mc.media_type
         WHERE mc.user_id = #{userId}
-          AND mc.media_type IN (2)
+          AND mc.media_type IN (1,2)
           AND mc.created_time >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    limit 10
     </select>
 
 </mapper>

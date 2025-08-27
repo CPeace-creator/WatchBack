@@ -10,4 +10,12 @@ import lombok.Data;
 @Data
 public class UserDto extends User {
     private Boolean rememberMe;
+
+    public Boolean getRememberMe() {
+        return rememberMe;
+    }
+
+    public void setRememberMe(Boolean rememberMe) {
+        this.rememberMe = rememberMe;
+    }
 }

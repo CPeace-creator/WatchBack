@@ -155,4 +155,11 @@ public class Movie {
         this.ifDel = ifDel;
     }
 
+    public Integer getTmdbId() {
+        return tmdbId;
+    }
+
+    public void setTmdbId(Integer tmdbId) {
+        this.tmdbId = tmdbId;
+    }
 }

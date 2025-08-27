@@ -15,6 +15,8 @@ import java.util.List;
  */
 @Data
 @AllArgsConstructor
+@Getter
+@Setter
 public class ImportResult {
     private int totalCount = 0;                  // 总导入数量
     private int successMovieCount = 0;           // 成功导入的电影数量
@@ -30,4 +32,59 @@ public class ImportResult {
         this.notFoundTVShowTitles = new ArrayList<>();
     }
 
+    public int getTotalCount() {
+        return totalCount;
+    }
+
+    public void setTotalCount(int totalCount) {
+        this.totalCount = totalCount;
+    }
+
+    public int getSuccessMovieCount() {
+        return successMovieCount;
+    }
+
+    public void setSuccessMovieCount(int successMovieCount) {
+        this.successMovieCount = successMovieCount;
+    }
+
+    public int getSuccessTVShowCount() {
+        return successTVShowCount;
+    }
+
+    public void setSuccessTVShowCount(int successTVShowCount) {
+        this.successTVShowCount = successTVShowCount;
+    }
+
+    public List<String> getNotFoundMovieTitles() {
+        return notFoundMovieTitles;
+    }
+
+    public void setNotFoundMovieTitles(List<String> notFoundMovieTitles) {
+        this.notFoundMovieTitles = notFoundMovieTitles;
+    }
+
+    public List<String> getNotFoundTVShowTitles() {
+        return notFoundTVShowTitles;
+    }
+
+    public void setNotFoundTVShowTitles(List<String> notFoundTVShowTitles) {
+        this.notFoundTVShowTitles = notFoundTVShowTitles;
+    }
+
+    public String getMovieErrorMessage() {
+        return movieErrorMessage;
+    }
+
+    public void setMovieErrorMessage(String movieErrorMessage) {
+        this.movieErrorMessage = movieErrorMessage;
+    }
+
+    public String getTvShowErrorMessage() {
+        return tvShowErrorMessage;
+    }
+
+    public void setTvShowErrorMessage(String tvShowErrorMessage) {
+        this.tvShowErrorMessage = tvShowErrorMessage;
+    }
 }
