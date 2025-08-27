@@ -103,5 +103,6 @@
                     </if>
                 </where>
              ) t
+            limit 10
     </select>
 </mapper>

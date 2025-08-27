@@ -5,6 +5,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cjh.watching.watchback.dto.UserDto;
 import com.cjh.watching.watchback.entity.User;
 import com.cjh.watching.watchback.mapper.UserMapper;
 import com.cjh.watching.watchback.service.UserService;
@@ -44,7 +45,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public SaResult login(User userLoginDto) {
+    public SaResult login(UserDto userLoginDto) {
         User user = userMapper.selectOne(new LambdaQueryWrapper<User>()
                 .eq(User::getEmail, userLoginDto.getEmail()));
 
@@ -58,7 +59,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         // 5. 登录并返回token
-        StpUtil.login(user.getId());
+        StpUtil.login(user.getId(),userLoginDto.getRememberMe());
 
         // 6. 返回登录成功信息及token
         return SaResult.ok("登录成功")

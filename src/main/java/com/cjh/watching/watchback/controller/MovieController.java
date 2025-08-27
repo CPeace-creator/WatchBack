@@ -44,7 +44,13 @@ public class MovieController {
 
     @SaCheckLogin
     @PostMapping(value = "/searchMovie")
-    public List<MovieDto> searchMovie(String search) {
+    public SaResult searchMovie(String search) {
         return movieService.searchMovie(search);
+    }
+
+    @SaCheckLogin
+    @PostMapping(value = "/movieDetail")
+    public SaResult movieDetail(Long query,Integer type) {
+        return movieService.movieDetail(query,type);
     }
 }

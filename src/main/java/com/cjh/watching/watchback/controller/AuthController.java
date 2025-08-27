@@ -3,6 +3,7 @@ package com.cjh.watching.watchback.controller;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
 import com.alibaba.fastjson2.JSONObject;
+import com.cjh.watching.watchback.dto.UserDto;
 import com.cjh.watching.watchback.entity.User;
 import com.cjh.watching.watchback.service.UserService;
 import com.cjh.watching.watchback.utils.Result;
@@ -27,7 +28,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public SaResult login(@RequestBody User userLoginDto) {
+    public SaResult login(@RequestBody UserDto userLoginDto) {
         return userService.login(userLoginDto);
     }
     @PostMapping("/logout")

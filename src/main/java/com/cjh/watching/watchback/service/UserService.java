@@ -2,6 +2,7 @@ package com.cjh.watching.watchback.service;
 
 import cn.dev33.satoken.util.SaResult;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.cjh.watching.watchback.dto.UserDto;
 import com.cjh.watching.watchback.entity.User;
 import com.cjh.watching.watchback.utils.Result;
 
@@ -12,6 +13,6 @@ import com.cjh.watching.watchback.utils.Result;
  **/
 public interface UserService extends IService<User> {
     SaResult register(User user);
-    SaResult login(User user);
+    SaResult login(UserDto user);
 
 }

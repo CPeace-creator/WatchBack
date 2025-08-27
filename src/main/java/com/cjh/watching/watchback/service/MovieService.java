@@ -21,5 +21,7 @@ public interface MovieService extends IService<Movie> {
 
     IPage<MovieDto> getAllData(PageRequest page);
 
-    List<MovieDto> searchMovie(String search);
+    SaResult searchMovie(String search);
+
+    SaResult movieDetail(Long query, Integer type);
 }

@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
  **/
 @Data
 public class MovieDto {
+    private Long id;
     private String originalLanguage;
     private String originalTitle;
     private String title;

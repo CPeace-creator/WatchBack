@@ -2,10 +2,12 @@ package com.cjh.watching.watchback.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
+import cn.hutool.core.bean.BeanUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -338,8 +340,33 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
     }
 
     @Override
-    public List<MovieDto> searchMovie(String search) {
-
-        return baseMapper.getAllDataBySearch(search);
+    public SaResult searchMovie(String search) {
+        List<MovieDto> allDataBySearch = baseMapper.getAllDataBySearch(search);
+        return SaResult.ok().setData(allDataBySearch);
     }
+
+    @Override
+    public SaResult movieDetail(Long query, Integer type) {
+        MovieDto result = null;
+        switch (type){
+            case 1:
+                Movie movies = baseMapper.selectOne(new LambdaQueryWrapper<Movie>().eq(Movie::getMovieId, query));
+                // 使用BeanUtil.copyToList复制列表
+                MovieDto movieDtos = BeanUtil.copyProperties(movies, MovieDto.class);
+                movieDtos.setId(movies.getMovieId());
+                movieDtos.setMediaType(1);
+                result = movieDtos;
+                break;
+            case 2:
+                TVShow shows = tvShowMapper.selectOne(new LambdaQueryWrapper<TVShow>().eq(TVShow::getShowId,query));
+                // 使用BeanUtil.copyToList将TVShow转换为MovieDto
+                MovieDto showDtos = BeanUtil.copyProperties(shows, MovieDto.class);
+                showDtos.setId(shows.getShowId().longValue());
+                showDtos.setMediaType(2);
+                result=showDtos;
+                break;
+        }
+        return SaResult.ok().setData(result);
+    }
+
 }
