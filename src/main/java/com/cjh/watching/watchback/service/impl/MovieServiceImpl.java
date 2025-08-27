@@ -6,7 +6,10 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cjh.watching.watchback.dto.MovieDto;
 import com.cjh.watching.watchback.entity.Movie;
 import com.cjh.watching.watchback.entity.TVShow;
 import com.cjh.watching.watchback.entity.UserMediaCollection;
@@ -16,6 +19,7 @@ import com.cjh.watching.watchback.mapper.UserMediaCollectionMapper;
 import com.cjh.watching.watchback.service.MovieService;
 import com.cjh.watching.watchback.service.UserMediaCollectionService;
 import com.cjh.watching.watchback.utils.ImportResult;
+import com.cjh.watching.watchback.utils.PageRequest;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -313,5 +317,29 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
             log.error("检查标题是否在电视剧中找到失败", e);
             return false;
         }
+    }
+
+    @Override
+    public IPage<MovieDto> getAllData(PageRequest page) {
+        Page<MovieDto> page1=new Page<>(page.getPageNum(),page.getPageSize());
+        IPage<MovieDto> allData = baseMapper.getAllData(page1);
+
+        // 手动计算总数 - 解决UNION ALL查询时total为0的问题
+        // 分别查询movies和tv_shows表的记录数并相加
+        Long moviesCount = baseMapper.selectCount(null);
+        Long tvShowsCount = tvShowMapper.selectCount(null);
+        int totalCount = Integer.valueOf((int) (moviesCount + tvShowsCount));
+        
+        // 设置总数到返回的分页对象中
+        allData.setTotal(totalCount);
+        allData.setPages((totalCount + page.getPageSize() - 1) / page.getPageSize());
+        
+        return allData;
+    }
+
+    @Override
+    public List<MovieDto> searchMovie(String search) {
+
+        return baseMapper.getAllDataBySearch(search);
     }
 }

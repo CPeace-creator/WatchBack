@@ -1,4 +1,107 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cjh.watching.watchback.mapper.MovieMapper">
+    <select id="getAllData" resultType="com.cjh.watching.watchback.dto.MovieDto">
+        SELECT
+            id,
+             tmdb_id,
+             title,
+             original_language,
+             overview,
+             vote_average,
+             vote_count,
+             popularity,
+             poster_path,
+             backdrop_path,
+             media_type,
+             genre_ids
+        FROM (
+                 SELECT
+                     movie_id as id,
+                     tmdb_id,
+                     title,
+                     original_language,
+                     overview,
+                     vote_average,
+                     vote_count,
+                     popularity,
+                     poster_path,
+                     backdrop_path,
+                     1 as media_type,
+                     genre_ids
+                 FROM movies
+                 UNION ALL
+                 SELECT
+                     show_id as id,
+                     tmdb_id,
+                     name as title,
+                     original_language,
+                     overview,
+                     vote_average,
+                     vote_count,
+                     popularity,
+                     poster_path,
+                     backdrop_path,
+                     2 as media_type,
+                     genre_ids
+                 FROM tv_shows
+             ) t
+    </select>
+
+    <select id="getAllDataBySearch" resultType="com.cjh.watching.watchback.dto.MovieDto">
+        SELECT
+            id,
+             tmdb_id,
+             title,
+             original_language,
+             overview,
+             vote_average,
+             vote_count,
+             popularity,
+             poster_path,
+             backdrop_path,
+             media_type,
+             genre_ids
+        FROM (
+                 SELECT
+                     movie_id as id,
+                     tmdb_id,
+                     title,
+                     original_language,
+                     overview,
+                     vote_average,
+                     vote_count,
+                     popularity,
+                     poster_path,
+                     backdrop_path,
+                     1 as media_type,
+                     genre_ids
+                 FROM movies
+                 <where>
+                     <if test="query!=null and query !=''">
+                         and title LIKE CONCAT('%',#{query},'%')
+                     </if>
+                 </where>
+                 UNION ALL
+                 SELECT
+                     show_id as id,
+                     tmdb_id,
+                     name as title,
+                     original_language,
+                     overview,
+                     vote_average,
+                     vote_count,
+                     popularity,
+                     poster_path,
+                     backdrop_path,
+                     2 as media_type,
+                     genre_ids
+                 FROM tv_shows
+                <where>
+                    <if test="query!=null and query !=''">
+                        and name LIKE CONCAT('%',#{query},'%')
+                    </if>
+                </where>
+             ) t
+    </select>
 </mapper>

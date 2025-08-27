@@ -4,6 +4,7 @@
     <select id="getByRecent" resultType="com.cjh.watching.watchback.dto.MovieDto">
         SELECT
             umc.tmdb_id,
+            umc.title,
             umc.original_language,
             umc.overview,
             umc.vote_average,
@@ -17,6 +18,7 @@
             SELECT
                 movie_id as media_id,
                 tmdb_id,
+                title as title,
                 original_language,
                 overview,
                 vote_average,
@@ -29,6 +31,7 @@
             SELECT
                 show_id as media_id,
                 tmdb_id,
+                name as title,
                 original_language,
                 overview,
                 vote_average,

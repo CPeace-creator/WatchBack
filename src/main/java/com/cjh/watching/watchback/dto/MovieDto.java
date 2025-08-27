@@ -22,5 +22,6 @@ public class MovieDto {
     private String overview;
     private String genreIds;
     private Integer tmdbId;
+    private Integer mediaType;
     private LocalDateTime createdTime;
 }

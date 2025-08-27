@@ -1,8 +1,11 @@
 package com.cjh.watching.watchback.service;
 
 import cn.dev33.satoken.util.SaResult;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.cjh.watching.watchback.dto.MovieDto;
 import com.cjh.watching.watchback.entity.Movie;
+import com.cjh.watching.watchback.utils.PageRequest;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -15,4 +18,8 @@ public interface MovieService extends IService<Movie> {
     List<Movie> getByRecent();
 
     SaResult importMovie(MultipartFile file);
+
+    IPage<MovieDto> getAllData(PageRequest page);
+
+    List<MovieDto> searchMovie(String search);
 }

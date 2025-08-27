@@ -2,6 +2,7 @@ package com.cjh.watching.watchback.config;
 
 import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.exception.SaTokenException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -16,6 +17,15 @@ public class SaTokenExceptionHandler {
         Map<String, Object> result = new HashMap<>();
         result.put("code", 401);
         result.put("message", e.getMessage());
+        result.put("data", null);
+        return result;
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public Map<String, Object> handleMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException e) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("code", 400);
+        result.put("message", "不支持的媒体类型: " + e.getContentType());
         result.put("data", null);
         return result;
     }
