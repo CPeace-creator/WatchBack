@@ -24,4 +24,6 @@ public interface MovieService extends IService<Movie> {
     SaResult searchMovie(String search);
 
     SaResult movieDetail(Long query, Integer type);
+
+    SaResult saveMovie(MovieDto movie);
 }

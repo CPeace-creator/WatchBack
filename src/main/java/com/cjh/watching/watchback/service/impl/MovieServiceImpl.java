@@ -3,6 +3,7 @@ package com.cjh.watching.watchback.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.date.DateUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
@@ -15,6 +16,7 @@ import com.cjh.watching.watchback.dto.MovieDto;
 import com.cjh.watching.watchback.entity.Movie;
 import com.cjh.watching.watchback.entity.TVShow;
 import com.cjh.watching.watchback.entity.UserMediaCollection;
+import com.cjh.watching.watchback.enums.MovieStatusEnum;
 import com.cjh.watching.watchback.mapper.MovieMapper;
 import com.cjh.watching.watchback.mapper.TVShowMapper;
 import com.cjh.watching.watchback.mapper.UserMediaCollectionMapper;
@@ -159,7 +161,7 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                         collection.setMediaId(movie.getMovieId());
                         collection.setTitle(movie.getTitle());
                         collection.setTmdbId(movie.getTmdbId());
-                        collection.setStatus(2); // 1-已收藏
+                        collection.setStatus(MovieStatusEnum.HASWATCHED.getValue());
                         collection.setCreatedTime(LocalDateTime.now());
                         collection.setUpdatedTime(LocalDateTime.now());
                         collections.add(collection);
@@ -227,7 +229,7 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                         collection.setMediaId(tvShow.getShowId().longValue());
                         collection.setTmdbId(tvShow.getTmdbId());
                         collection.setTitle(tvShow.getName());
-                        collection.setStatus(2); // 1-已收藏
+                        collection.setStatus(MovieStatusEnum.HASWATCHED.getValue());
                         collection.setCreatedTime(LocalDateTime.now());
                         collection.setUpdatedTime(LocalDateTime.now());
                         collections.add(collection);
@@ -369,4 +371,17 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
         return SaResult.ok().setData(result);
     }
 
+    @Override
+    public SaResult saveMovie(MovieDto movie) {
+        String userId = StpUtil.getLoginIdAsString();
+        UserMediaCollection collection = new UserMediaCollection();
+        collection.setUserId(Long.valueOf(userId));
+        collection.setCreatedTime(LocalDateTime.now());
+        collection.setStatus(MovieStatusEnum.HASWATCHED.getValue());
+        collection.setMediaType(movie.getMediaType());
+        collection.setTmdbId(movie.getTmdbId());
+        collection.setTitle(movie.getTitle());
+        userMediaCollectionMapper.insert(collection);
+        return SaResult.ok("导入影片成功!");
+    }
 }
