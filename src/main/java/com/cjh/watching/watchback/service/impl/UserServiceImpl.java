@@ -2,6 +2,7 @@ package com.cjh.watching.watchback.service.impl;
 
 import cn.dev33.satoken.secure.SaBase64Util;
 import cn.dev33.satoken.stp.StpUtil;
+import cn.dev33.satoken.stp.parameter.SaLoginParameter;
 import cn.dev33.satoken.util.SaResult;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -59,7 +60,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         // 5. 登录并返回token
-        StpUtil.login(user.getId(),userLoginDto.getRememberMe());
+        Boolean rememberMe = userLoginDto.getRememberMe();
+        StpUtil.login(user.getId(),new SaLoginParameter()
+                .setDevice("PC")                // 此次登录的客户端设备类型, 用于[同端互斥登录]时指定此次登录的设备类型
+                .setIsLastingCookie(rememberMe)        // 是否为持久Cookie（临时Cookie在浏览器关闭时会自动删除，持久Cookie在重新打开后依然存在）
+                .setTimeout(rememberMe?60 * 60 * 24 * 7:86400)    // 指定此次登录token的有效期, 单位:秒 （如未指定，自动取全局配置的 timeout 值）
+                .setIsWriteHeader(false));
 
         // 6. 返回登录成功信息及token
         return SaResult.ok("登录成功")
