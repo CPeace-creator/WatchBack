@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 /**
  * - @author Cjh。
  * - @date 2025/8/28 13:52。
@@ -14,6 +16,11 @@ import lombok.NoArgsConstructor;
 public class MovieQuery {
     private Integer status;
     private String query;
+
+    private BigDecimal totalWatched;
+    private BigDecimal monthlyWatched;
+    private BigDecimal averageRating;
+    private String favoriteGenre;
 
     public Integer getStatus() {
         return status;

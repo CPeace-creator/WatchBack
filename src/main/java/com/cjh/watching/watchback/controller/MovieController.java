@@ -96,4 +96,13 @@ public class MovieController {
     public SaResult getByAllData(PageRequest page,@RequestBody MovieQuery movieQuery) {
         return SaResult.ok().setData(movieService.getByAllData(page,movieQuery));
     }
+
+    /**
+     * 统计数据
+     */
+    @SaCheckLogin
+    @PostMapping("/getUserStatistics")
+    public SaResult getUserStatistics() {
+        return movieService.getUserStatistics();
+    }
 }

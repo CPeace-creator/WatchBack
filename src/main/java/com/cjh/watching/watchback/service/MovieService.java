@@ -28,4 +28,8 @@ public interface MovieService extends IService<Movie> {
     SaResult movieDetail(Long query, Integer type);
 
     SaResult saveMovie(MovieDto movie);
+
+    SaResult getUserStatistics();
+
+
 }

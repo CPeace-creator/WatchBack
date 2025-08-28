@@ -414,4 +414,10 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
         return SaResult.ok("导入影片成功!");
 
     }
+
+    @Override
+    public SaResult getUserStatistics() {
+        MovieQuery userStatistics = userMediaCollectionMapper.getUserStatistics(StpUtil.getLoginIdAsString(),2);
+        return SaResult.ok().setData(userStatistics);
+    }
 }

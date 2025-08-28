@@ -1,5 +1,6 @@
 package com.cjh.watching.watchback.mapper;
 
+import cn.dev33.satoken.util.SaResult;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -19,4 +20,5 @@ public interface UserMediaCollectionMapper extends BaseMapper<UserMediaCollectio
     List<MovieDto> getByRecent(String userId);
     IPage<MovieDto> getByAllData(Page<MovieDto> page, @Param("userId") String userId, @Param("query") MovieQuery movieQuery);
 
+    MovieQuery getUserStatistics(@Param("userId") String userId, @Param("status") Integer status);
 }

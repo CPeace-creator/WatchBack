@@ -109,4 +109,44 @@
         </where>
         order by mc.created_time desc
     </select>
+
+    <select id="getUserStatistics" resultType="com.cjh.watching.watchback.dto.MovieQuery">
+        WITH user_media AS (
+            SELECT
+                mc.media_id,
+                mc.media_type,
+                mc.created_time,
+                umc.vote_average,
+                umc.genre_ids
+            FROM user_media_collection mc
+                     INNER JOIN (
+                SELECT movie_id as media_id, 1 as media_type, vote_average, genre_ids FROM movies
+                UNION ALL
+                SELECT show_id as media_id, 2 as media_type, vote_average, genre_ids FROM tv_shows
+            ) umc ON umc.media_id = mc.media_id AND umc.media_type = mc.media_type
+            WHERE mc.user_id = #{userId}
+              AND mc.status = #{status}
+              AND mc.media_type IN (1, 2)
+        ),
+             genre_counts AS (
+                 SELECT
+                     JSON_UNQUOTE(JSON_EXTRACT(um.genre_ids, CONCAT('$[', n.n, ']'))) as genre_id,
+                     COUNT(*) as count
+        FROM user_media um
+            CROSS JOIN (SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4) n
+        WHERE JSON_LENGTH(um.genre_ids) > n.n
+        GROUP BY JSON_UNQUOTE(JSON_EXTRACT(um.genre_ids, CONCAT('$[', n.n, ']')))
+            )
+        SELECT
+            COUNT(*) as totalWatched,
+            COUNT(CASE WHEN created_time >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) THEN 1 END) as monthlyWatched,
+            ROUND(AVG(vote_average), 1) as averageRating,
+            (
+                SELECT genre_id
+                FROM genre_counts
+                ORDER BY count DESC
+                LIMIT 1
+            ) as favoriteGenre
+        FROM user_media
+    </select>
 </mapper>
