@@ -338,9 +338,18 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
 
         // 手动计算总数 - 解决UNION ALL查询时total为0的问题
         // 分别查询movies和tv_shows表的记录数并相加
-        Long moviesCount = baseMapper.selectCount(new LambdaQueryWrapper<Movie>().like(Movie::getTitle, query.getQuery() == null ? null : "%" + query.getQuery() + "%"));
-        Long tvShowsCount = tvShowMapper.selectCount(new LambdaQueryWrapper<TVShow>().like(TVShow::getName, query.getQuery() == null ? null : "%" + query.getQuery() + "%"));
-        int totalCount = Integer.valueOf((int) (moviesCount + tvShowsCount));
+        Long moviesCount = 0L;
+        Long tvShowsCount = 0L;
+
+        if (query.getQuery() != null && !query.getQuery().trim().isEmpty()) {
+            moviesCount = baseMapper.selectCount(new LambdaQueryWrapper<Movie>().like(Movie::getTitle, "%" + query.getQuery() + "%"));
+            tvShowsCount = tvShowMapper.selectCount(new LambdaQueryWrapper<TVShow>().like(TVShow::getName, "%" + query.getQuery() + "%"));
+        } else {
+            moviesCount = baseMapper.selectCount(new LambdaQueryWrapper<Movie>());
+            tvShowsCount = tvShowMapper.selectCount(new LambdaQueryWrapper<TVShow>());
+        }
+
+        int totalCount = Math.toIntExact(moviesCount + tvShowsCount);
         
         // 设置总数到返回的分页对象中
         allData.setTotal(totalCount);
