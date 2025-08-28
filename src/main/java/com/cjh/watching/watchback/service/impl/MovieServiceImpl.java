@@ -13,6 +13,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cjh.watching.watchback.dto.MovieDto;
+import com.cjh.watching.watchback.dto.MovieQuery;
 import com.cjh.watching.watchback.entity.Movie;
 import com.cjh.watching.watchback.entity.TVShow;
 import com.cjh.watching.watchback.entity.UserMediaCollection;
@@ -58,6 +59,13 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
     public List<MovieDto> getByRecent() {
 
         return userMediaCollectionMapper.getByRecent(StpUtil.getLoginIdAsString());
+    }
+
+    @Override
+    public IPage<MovieDto> getByAllData(PageRequest page, MovieQuery movieQuery) {
+        Page<MovieDto> page1=new Page<>(page.getPageNum(),page.getPageSize());
+        IPage<MovieDto> byAllData = userMediaCollectionMapper.getByAllData(page1,StpUtil.getLoginIdAsString(), movieQuery);
+        return byAllData;
     }
 
     @Override
@@ -324,14 +332,14 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
     }
 
     @Override
-    public IPage<MovieDto> getAllData(PageRequest page) {
+    public IPage<MovieDto> getAllData(PageRequest page,MovieQuery query) {
         Page<MovieDto> page1=new Page<>(page.getPageNum(),page.getPageSize());
-        IPage<MovieDto> allData = baseMapper.getAllData(page1);
+        IPage<MovieDto> allData = baseMapper.getAllData(page1,query);
 
         // 手动计算总数 - 解决UNION ALL查询时total为0的问题
         // 分别查询movies和tv_shows表的记录数并相加
-        Long moviesCount = baseMapper.selectCount(null);
-        Long tvShowsCount = tvShowMapper.selectCount(null);
+        Long moviesCount = baseMapper.selectCount(new LambdaQueryWrapper<Movie>().like(Movie::getTitle, query.getQuery() == null ? null : "%" + query.getQuery() + "%"));
+        Long tvShowsCount = tvShowMapper.selectCount(new LambdaQueryWrapper<TVShow>().like(TVShow::getName, query.getQuery() == null ? null : "%" + query.getQuery() + "%"));
         int totalCount = Integer.valueOf((int) (moviesCount + tvShowsCount));
         
         // 设置总数到返回的分页对象中

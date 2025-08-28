@@ -50,7 +50,63 @@
         WHERE mc.user_id = #{userId}
           AND mc.media_type IN (1,2)
           AND mc.created_time >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        order by mc.created_time desc
     limit 10
     </select>
 
+    <select id="getByAllData" resultType="com.cjh.watching.watchback.dto.MovieDto">
+        SELECT
+            umc.tmdb_id,
+            umc.title,
+            umc.original_language,
+            umc.overview,
+            umc.vote_average,
+            umc.vote_count,
+            umc.popularity,
+            umc.poster_path,
+            umc.backdrop_path,
+            mc.created_time,
+            umc.media_type,
+            umc.genre_ids
+        FROM user_media_collection mc
+                 LEFT JOIN (
+            SELECT
+                movie_id as media_id,
+                tmdb_id,
+                title as title,
+                original_language,
+                overview,
+                vote_average,
+                vote_count,
+                popularity,
+                poster_path,
+                backdrop_path,
+                1 as media_type,
+                genre_ids
+            FROM movies
+            UNION
+            SELECT
+                show_id as media_id,
+                tmdb_id,
+                name as title,
+                original_language,
+                overview,
+                vote_average,
+                vote_count,
+                popularity,
+                poster_path,
+                backdrop_path,
+                2 as media_type,
+                genre_ids
+            FROM tv_shows
+        ) umc ON umc.media_id = mc.media_id AND umc.media_type = mc.media_type
+        <where>
+            mc.user_id = #{userId} and mc.status=#{query.status}
+            AND mc.media_type IN (1,2)
+            <if test="query.query!=null and query.query !=''">
+                and  umc.title LIKE CONCAT('%',#{query.query},'%')
+            </if>
+        </where>
+        order by mc.created_time desc
+    </select>
 </mapper>

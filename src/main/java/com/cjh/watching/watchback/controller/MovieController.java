@@ -5,6 +5,7 @@ import cn.dev33.satoken.annotation.SaIgnore;
 import cn.dev33.satoken.util.SaResult;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.cjh.watching.watchback.dto.MovieDto;
+import com.cjh.watching.watchback.dto.MovieQuery;
 import com.cjh.watching.watchback.entity.Movie;
 import com.cjh.watching.watchback.service.MovieService;
 import com.cjh.watching.watchback.utils.PageRequest;
@@ -42,8 +43,8 @@ public class MovieController {
      */
     @SaCheckLogin
     @PostMapping(value = "/getAllData")
-    public IPage<MovieDto> getAllData(PageRequest page) {
-        return movieService.getAllData(page);
+    public IPage<MovieDto> getAllData(PageRequest page,@RequestBody MovieQuery query) {
+        return movieService.getAllData(page,query);
     }
 
     /**
@@ -84,5 +85,15 @@ public class MovieController {
     @PostMapping(value = "/saveMovie")
     public SaResult saveMovie(@RequestBody  MovieDto movie) {
         return movieService.saveMovie(movie);
+    }
+
+    /**
+     * 获取所有观看的数据 状态过滤
+     * @return
+     */
+    @SaCheckLogin
+    @PostMapping("/getByAllData")
+    public SaResult getByAllData(PageRequest page,@RequestBody MovieQuery movieQuery) {
+        return SaResult.ok().setData(movieService.getByAllData(page,movieQuery));
     }
 }

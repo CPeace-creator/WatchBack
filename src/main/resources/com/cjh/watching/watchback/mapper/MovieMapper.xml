@@ -30,6 +30,11 @@
                      1 as media_type,
                      genre_ids
                  FROM movies
+                <where>
+                    <if test="query.query!=null and query.query !=''">
+                        and title LIKE CONCAT('%',#{query.query},'%')
+                    </if>
+                </where>
                  UNION ALL
                  SELECT
                      show_id as id,
@@ -45,6 +50,11 @@
                      2 as media_type,
                      genre_ids
                  FROM tv_shows
+                <where>
+                    <if test="query.query!=null and query.query !=''">
+                        and name LIKE CONCAT('%',#{query.query},'%')
+                    </if>
+                </where>
              ) t
     </select>
 
