@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cjh.watching.watchback.mapper.UpcomingMapper">
+
+    <select id="getPages" resultType="com.cjh.watching.watchback.entity.Upcoming">
+        select
+            id,
+            adult,
+            backdrop_path,
+            genre_ids,
+            original_language,
+            original_title,
+            overview,
+            popularity,
+            poster_path,
+            release_date,
+            title,
+            video,
+            vote_average,
+            vote_count,
+            minimum,
+            maximum
+        from upcoming
+    </select>
+
+</mapper>

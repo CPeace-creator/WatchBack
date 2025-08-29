@@ -32,4 +32,22 @@ sa-token:
   token-style: uuid
   # 是否输出操作日志
   is-log: true
-
+xxl:
+  job:
+    admin:
+      addresses: http://127.0.0.1:9208/xxl-job-admin
+    # 访问令牌，需要与XXL-JOB Admin控制台配置一致，如果为空则不验证
+    accessToken: 
+    executor:
+      # 执行器名称，需要在XXL-JOB Admin控制台中配置
+      appname: watchBack-executor
+      # 执行器地址，为空则自动获取
+      address:
+      # 执行器IP，为空则自动获取
+      ip:
+      # 执行器端口
+      port: 9999
+      # 执行器日志路径
+      logpath: ./logs/xxl-job
+      # 日志保留天数
+      logretentiondays: 30

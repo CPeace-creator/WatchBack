@@ -111,6 +111,11 @@
         <artifactId>sa-token-jwt</artifactId>
         <version>1.44.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.xuxueli</groupId>
+            <artifactId>xxl-job-core</artifactId>
+            <version>3.0.0</version>
+        </dependency>
     </dependencies>
 
     <build>
