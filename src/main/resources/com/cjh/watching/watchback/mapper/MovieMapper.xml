@@ -56,6 +56,7 @@
                     </if>
                 </where>
              ) t
+            ORDER BY RAND()
     </select>
 
     <select id="getAllDataBySearch" resultType="com.cjh.watching.watchback.dto.MovieDto">

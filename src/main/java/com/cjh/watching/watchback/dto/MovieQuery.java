@@ -37,4 +37,36 @@ public class MovieQuery {
     public void setQuery(String query) {
         this.query = query;
     }
+
+    public BigDecimal getTotalWatched() {
+        return totalWatched;
+    }
+
+    public void setTotalWatched(BigDecimal totalWatched) {
+        this.totalWatched = totalWatched;
+    }
+
+    public BigDecimal getMonthlyWatched() {
+        return monthlyWatched;
+    }
+
+    public void setMonthlyWatched(BigDecimal monthlyWatched) {
+        this.monthlyWatched = monthlyWatched;
+    }
+
+    public BigDecimal getAverageRating() {
+        return averageRating;
+    }
+
+    public void setAverageRating(BigDecimal averageRating) {
+        this.averageRating = averageRating;
+    }
+
+    public String getFavoriteGenre() {
+        return favoriteGenre;
+    }
+
+    public void setFavoriteGenre(String favoriteGenre) {
+        this.favoriteGenre = favoriteGenre;
+    }
 }

@@ -130,10 +130,16 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
         try {
             // 查找数据库中已存在的电影
             List<Movie> existingMovies = baseMapper.selectList(new LambdaQueryWrapper<Movie>()
-                    .in(Movie::getTitle, titles)
-                    .or().in(Movie::getOriginalTitle, titles)
+                    .and(wrapper -> {
+                        for (String title : titles) {
+                            wrapper.or(q -> q
+                                    .like(Movie::getTitle, title)
+                                    .or()
+                                    .like(Movie::getOriginalTitle, title)
+                            );
+                        }
+                    })
             );
-            
             // 提取已存在电影的标题（包括原始标题）
             Set<String> existingMovieTitles = new HashSet<>();
             Map<String, Movie> titleToMovieMap = new HashMap<>();
@@ -198,8 +204,15 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
         try {
             // 查找数据库中已存在的电视剧
             List<TVShow> existingTVShows = tvShowMapper.selectList(new LambdaQueryWrapper<TVShow>()
-                    .in(TVShow::getName, titles)
-                    .or().in(TVShow::getOriginalName, titles)
+                    .and(wrapper -> {
+                        for (String title : titles) {
+                            wrapper.or(q -> q
+                                    .like(TVShow::getName, title)
+                                    .or()
+                                    .like(TVShow::getOriginalName, title)
+                            );
+                        }
+                    })
             );
             
             // 提取已存在电视剧的标题（包括原始标题）

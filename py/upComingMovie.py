@@ -15,7 +15,7 @@ if sys.stdout.encoding != 'utf-8':
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'root',
+    'password': 'root0128',
     'database': 'movie',
     'charset': 'utf8mb4'
 }
