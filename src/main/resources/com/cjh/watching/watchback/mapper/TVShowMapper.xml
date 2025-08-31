@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cjh.watching.watchback.mapper.TVShowMapper">
+    
+    <!-- 精确匹配电视剧标题 -->
+    <select id="findTVShowsByExactTitles" resultType="com.cjh.watching.watchback.entity.TVShow">
+        SELECT *
+        FROM tv_shows
+        WHERE name IN
+        <foreach item="title" collection="titles" open="(" separator="," close=")">
+            #{title}
+        </foreach>
+        OR original_name IN
+        <foreach item="title" collection="titles" open="(" separator="," close=")">
+            #{title}
+        </foreach>
+    </select>
+    
+    <!-- 模糊匹配电视剧标题 -->
+    <select id="findTVShowsByFuzzyTitle" resultType="com.cjh.watching.watchback.entity.TVShow">
+        SELECT *
+        FROM tv_shows
+        WHERE name LIKE CONCAT('%', #{title}, '%')
+           OR original_name LIKE CONCAT('%', #{title}, '%')
+        ORDER BY
+            CASE
+                WHEN name = #{title} OR original_name = #{title} THEN 1
+                WHEN name LIKE CONCAT(#{title}, '%') OR original_name LIKE CONCAT(#{title}, '%') THEN 2
+                WHEN name LIKE CONCAT('%', #{title}) OR original_name LIKE CONCAT('%', #{title}) THEN 3
+                ELSE 4
+            END,
+            LENGTH(name) ASC
+        LIMIT 10
+    </select>
+    
+    <!-- 查询用户对电视剧的收藏状态 -->
+    <select id="getUserTVShowCollectionStatuses" resultType="java.lang.Integer">
+        SELECT status
+        FROM user_media_collection
+        WHERE user_id = #{userId}
+          AND media_type = 2
+          AND media_id = #{mediaId}
+        ORDER BY status ASC
+    </select>
+    
+</mapper>
