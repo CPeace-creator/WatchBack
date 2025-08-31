@@ -505,6 +505,8 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                         collection.setMediaType(1); // 1-电影
                         collection.setMediaId(movie.getMovieId());
                         collection.setTitle(movie.getTitle());
+                        Object loginId = StpUtil.getLoginId();
+                        collection.setUserId(Long.valueOf(loginId.toString()));
                         collection.setTmdbId(movie.getTmdbId());
                         collection.setStatus(MovieStatusEnum.HASWATCHED.getValue());
                         collection.setCreatedTime(LocalDateTime.now());
@@ -537,6 +539,8 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                         collection.setMediaId(tvShow.getShowId().longValue());
                         collection.setTmdbId(tvShow.getTmdbId());
                         collection.setTitle(tvShow.getName());
+                        Object loginId = StpUtil.getLoginId();
+                        collection.setUserId(Long.valueOf(loginId.toString()));
                         collection.setStatus(MovieStatusEnum.HASWATCHED.getValue());
                         collection.setCreatedTime(LocalDateTime.now());
                         collection.setUpdatedTime(LocalDateTime.now());
