@@ -4,6 +4,9 @@ import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaIgnore;
 import cn.dev33.satoken.util.SaResult;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.cjh.watching.watchback.dto.BatchAddMediaRequest;
+import com.cjh.watching.watchback.dto.CollectionStatusRequest;
+import com.cjh.watching.watchback.dto.FuzzyMatchRequest;
 import com.cjh.watching.watchback.dto.MovieDto;
 import com.cjh.watching.watchback.dto.MovieQuery;
 import com.cjh.watching.watchback.entity.Movie;
@@ -104,5 +107,39 @@ public class MovieController {
     @PostMapping("/getUserStatistics")
     public SaResult getUserStatistics() {
         return movieService.getUserStatistics();
+    }
+    
+    /**
+     * 处理用户选择的模糊匹配项
+     * @param request 模糊匹配确认请求
+     * @return 处理结果
+     */
+    @SaCheckLogin
+    @PostMapping("/confirmFuzzyMatches")
+    public SaResult confirmFuzzyMatches(@RequestBody FuzzyMatchRequest request) {
+        return movieService.confirmFuzzyMatches(request.getUserId(), request.getSelectedMovies(), request.getSelectedTVShows());
+    }
+    
+    /**
+     * 批量添加用户媒体收藏
+     * @param request 批量添加请求
+     * @return 处理结果
+     */
+    @SaCheckLogin
+    @PostMapping("/batchAddMediaCollection")
+    public SaResult batchAddMediaCollection(@RequestBody BatchAddMediaRequest request) {
+        return movieService.batchAddMediaCollection(request.getMediaIds(), request.getStatus(), request.getMediaType());
+    }
+    
+    /**
+     * 管理用户媒体收藏状态（添加/取消标识）
+     * @param request 收藏状态管理请求
+     * @return 处理结果
+     */
+    @SaCheckLogin
+    @PostMapping("/manageCollectionStatus")
+    public SaResult manageCollectionStatus(@RequestBody CollectionStatusRequest request) {
+        return movieService.manageCollectionStatus(request.getMediaId(), request.getMediaType(), 
+                request.getStatus(), request.getIsAdd());
     }
 }

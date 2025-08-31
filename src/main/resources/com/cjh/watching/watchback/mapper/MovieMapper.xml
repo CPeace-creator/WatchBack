@@ -116,4 +116,45 @@
              ) t
             limit 10
     </select>
+    
+    <!-- 精确匹配电影标题 -->
+    <select id="findMoviesByExactTitles" resultType="com.cjh.watching.watchback.entity.Movie">
+        SELECT *
+        FROM movies
+        WHERE title IN
+        <foreach item="title" collection="titles" open="(" separator="," close=")">
+            #{title}
+        </foreach>
+        OR original_title IN
+        <foreach item="title" collection="titles" open="(" separator="," close=")">
+            #{title}
+        </foreach>
+    </select>
+    
+    <!-- 模糊匹配电影标题 -->
+    <select id="findMoviesByFuzzyTitle" resultType="com.cjh.watching.watchback.entity.Movie">
+        SELECT *
+        FROM movies
+        WHERE title LIKE CONCAT('%', #{title}, '%')
+           OR original_title LIKE CONCAT('%', #{title}, '%')
+        ORDER BY
+            CASE
+                WHEN title = #{title} OR original_title = #{title} THEN 1
+                WHEN title LIKE CONCAT(#{title}, '%') OR original_title LIKE CONCAT(#{title}, '%') THEN 2
+                WHEN title LIKE CONCAT('%', #{title}) OR original_title LIKE CONCAT('%', #{title}) THEN 3
+                ELSE 4
+            END,
+            LENGTH(title) ASC
+        LIMIT 10
+    </select>
+    
+    <!-- 查询用户对电影的收藏状态 -->
+    <select id="getUserMovieCollectionStatuses" resultType="java.lang.Integer">
+        SELECT status
+        FROM user_media_collection
+        WHERE user_id = #{userId}
+          AND media_type = 1
+          AND media_id = #{mediaId}
+        ORDER BY status ASC
+    </select>
 </mapper>

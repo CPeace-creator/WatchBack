@@ -30,6 +30,34 @@ public interface MovieService extends IService<Movie> {
     SaResult saveMovie(MovieDto movie);
 
     SaResult getUserStatistics();
+    
+    /**
+     * 处理用户选择的模糊匹配项
+     * @param userId 用户ID
+     * @param selectedMovies 用户选择的电影ID列表
+     * @param selectedTVShows 用户选择的电视剧ID列表
+     * @return 处理结果
+     */
+    SaResult confirmFuzzyMatches(Long userId, List<Long> selectedMovies, List<Long> selectedTVShows);
+    
+    /**
+     * 批量添加用户媒体收藏
+     * @param mediaIds 媒体ID列表
+     * @param status 状态 1-已收藏, 2-已观看, 3-想看
+     * @param mediaType 媒体类型 1-电影, 2-电视剧
+     * @return 处理结果
+     */
+    SaResult batchAddMediaCollection(List<Long> mediaIds, Integer status, Integer mediaType);
+    
+    /**
+     * 管理用户媒体收藏状态（添加/取消标识）
+     * @param mediaId 媒体ID
+     * @param mediaType 媒体类型 1-电影, 2-电视剧
+     * @param status 状态 1-已收藏, 2-已观看, 3-想看
+     * @param isAdd 操作类型 true-添加标识, false-取消标识
+     * @return 处理结果
+     */
+    SaResult manageCollectionStatus(Long mediaId, Integer mediaType, Integer status, Boolean isAdd);
 
 
 }
