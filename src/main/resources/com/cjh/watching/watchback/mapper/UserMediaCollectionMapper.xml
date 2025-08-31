@@ -49,6 +49,7 @@
         ) umc ON umc.media_id = mc.media_id AND umc.media_type = mc.media_type
         WHERE mc.user_id = #{userId}
           AND mc.media_type IN (1,2)
+          AND mc.status=2
           AND mc.created_time >= DATE_SUB(NOW(), INTERVAL 7 DAY)
         order by mc.created_time desc
     limit 10
