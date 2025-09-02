@@ -28,6 +28,8 @@ import com.cjh.watching.watchback.utils.PageRequest;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -360,6 +362,7 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
     }
 
     @Override
+    @Cacheable(value = "allDataCache", key = "T(com.cjh.watching.watchback.utils.CacheKeyGenerator).generateKey(#page, #query)")
     public IPage<MovieDto> getAllData(PageRequest page,MovieQuery query) {
         Page<MovieDto> page1=new Page<>(page.getPageNum(),page.getPageSize());
         IPage<MovieDto> allData = baseMapper.getAllData(page1,query);

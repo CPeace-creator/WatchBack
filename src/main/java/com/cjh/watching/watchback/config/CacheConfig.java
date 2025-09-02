@@ -26,7 +26,7 @@ public class CacheConfig {
     public CacheManager cacheManager(){
         //缓存配置对线
         RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig();;
-        redisCacheConfiguration = redisCacheConfiguration.entryTtl(Duration.ofMillis(30L))//设置缓存的默认时间30分钟;
+        redisCacheConfiguration = redisCacheConfiguration.entryTtl(Duration.ofMinutes(30L))//设置缓存的默认时间30分钟;
                 .disableCachingNullValues()
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(keySerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(valueSerializer()));
