@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * - @author Cjh。
@@ -25,6 +26,7 @@ public class MovieDto {
     private Integer tmdbId;
     private Integer mediaType;
     private LocalDateTime createdTime;
+    private List<Integer> collectionStatuses; // 用户收藏状态列表：1-已收藏, 2-已观看, 3-想看，空数组-未收藏
 
     public Long getId() {
         return id;
@@ -136,5 +138,13 @@ public class MovieDto {
 
     public void setCreatedTime(LocalDateTime createdTime) {
         this.createdTime = createdTime;
+    }
+
+    public List<Integer> getCollectionStatuses() {
+        return collectionStatuses;
+    }
+
+    public void setCollectionStatuses(List<Integer> collectionStatuses) {
+        this.collectionStatuses = collectionStatuses;
     }
 }

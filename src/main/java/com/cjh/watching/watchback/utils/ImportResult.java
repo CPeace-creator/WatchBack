@@ -1,10 +1,7 @@
 package com.cjh.watching.watchback.utils;
 
-/**
- * - @author Cjh。
- * - @date 2025/8/26 16:53。
- **/
-
+import com.cjh.watching.watchback.entity.Movie;
+import com.cjh.watching.watchback.entity.TVShow;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -23,6 +20,8 @@ public class ImportResult {
     private int successTVShowCount = 0;          // 成功导入的电视剧数量
     private List<String> notFoundMovieTitles = new ArrayList<>(); // 未找到的电影标题列表
     private List<String> notFoundTVShowTitles = new ArrayList<>(); // 未找到的电视剧标题列表
+    private List<MovieFuzzyMatch> movieFuzzyMatches = new ArrayList<>(); // 电影模糊匹配结果
+    private List<TVShowFuzzyMatch> tvShowFuzzyMatches = new ArrayList<>(); // 电视剧模糊匹配结果
     private String movieErrorMessage;        // 电影导入错误信息
     private String tvShowErrorMessage;       // 电视剧导入错误信息
 
@@ -30,6 +29,8 @@ public class ImportResult {
     public ImportResult() {
         this.notFoundMovieTitles = new ArrayList<>();
         this.notFoundTVShowTitles = new ArrayList<>();
+        this.movieFuzzyMatches = new ArrayList<>();
+        this.tvShowFuzzyMatches = new ArrayList<>();
     }
 
     public int getTotalCount() {
@@ -86,5 +87,75 @@ public class ImportResult {
 
     public void setTvShowErrorMessage(String tvShowErrorMessage) {
         this.tvShowErrorMessage = tvShowErrorMessage;
+    }
+
+    public List<MovieFuzzyMatch> getMovieFuzzyMatches() {
+        return movieFuzzyMatches;
+    }
+
+    public void setMovieFuzzyMatches(List<MovieFuzzyMatch> movieFuzzyMatches) {
+        this.movieFuzzyMatches = movieFuzzyMatches;
+    }
+
+    public List<TVShowFuzzyMatch> getTvShowFuzzyMatches() {
+        return tvShowFuzzyMatches;
+    }
+
+    public void setTvShowFuzzyMatches(List<TVShowFuzzyMatch> tvShowFuzzyMatches) {
+        this.tvShowFuzzyMatches = tvShowFuzzyMatches;
+    }
+
+    /**
+     * 电影模糊匹配结果
+     */
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class MovieFuzzyMatch {
+        private String inputTitle;           // 用户输入的标题
+        private List<Movie> matchedMovies;   // 匹配到的电影列表
+
+        public List<Movie> getMatchedMovies() {
+            return matchedMovies;
+        }
+
+        public void setMatchedMovies(List<Movie> matchedMovies) {
+            this.matchedMovies = matchedMovies;
+        }
+
+        public String getInputTitle() {
+            return inputTitle;
+        }
+
+        public void setInputTitle(String inputTitle) {
+            this.inputTitle = inputTitle;
+        }
+    }
+
+    /**
+     * 电视剧模糊匹配结果
+     */
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TVShowFuzzyMatch {
+        private String inputTitle;           // 用户输入的标题
+        private List<TVShow> matchedTVShows; // 匹配到的电视剧列表
+
+        public String getInputTitle() {
+            return inputTitle;
+        }
+
+        public void setInputTitle(String inputTitle) {
+            this.inputTitle = inputTitle;
+        }
+
+        public List<TVShow> getMatchedTVShows() {
+            return matchedTVShows;
+        }
+
+        public void setMatchedTVShows(List<TVShow> matchedTVShows) {
+            this.matchedTVShows = matchedTVShows;
+        }
     }
 }

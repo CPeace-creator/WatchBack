@@ -128,28 +128,42 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
      */
     private void handleMoviesImport(List<String> titles, Long userId, ImportResult result) {
         try {
-            // 查找数据库中已存在的电影
-            List<Movie> existingMovies = baseMapper.selectList(new LambdaQueryWrapper<Movie>()
-                    .in(Movie::getTitle, titles)
-                    .or().in(Movie::getOriginalTitle, titles)
-            );
+            // 1. 先进行精确匹配
+            List<Movie> exactMatches = baseMapper.findMoviesByExactTitles(titles);
             
-            // 提取已存在电影的标题（包括原始标题）
-            Set<String> existingMovieTitles = new HashSet<>();
+            // 2. 提取精确匹配的标题
+            Set<String> exactMatchTitles = new HashSet<>();
             Map<String, Movie> titleToMovieMap = new HashMap<>();
-            for (Movie movie : existingMovies) {
-                existingMovieTitles.add(movie.getTitle());
-                existingMovieTitles.add(movie.getOriginalTitle());
+            for (Movie movie : exactMatches) {
+                exactMatchTitles.add(movie.getTitle());
+                exactMatchTitles.add(movie.getOriginalTitle());
                 titleToMovieMap.put(movie.getTitle(), movie);
-                titleToMovieMap.put(movie.getOriginalTitle(), movie);
+                if (movie.getOriginalTitle() != null) {
+                    titleToMovieMap.put(movie.getOriginalTitle(), movie);
+                }
             }
             
-            // 找出不存在的电影标题
-            List<String> notFoundMovies = titles.stream()
-                    .filter(title -> !existingMovieTitles.contains(title))
+            // 3. 找出未精确匹配的标题，进行模糊匹配
+            List<String> unmatched = titles.stream()
+                    .filter(title -> !exactMatchTitles.contains(title))
                     .collect(Collectors.toList());
             
-            // 批量添加用户收藏记录
+            List<String> notFoundMovies = new ArrayList<>();
+            for (String title : unmatched) {
+                List<Movie> fuzzyMatches = baseMapper.findMoviesByFuzzyTitle(title);
+                if (!fuzzyMatches.isEmpty()) {
+                    // 有模糊匹配结果，添加到模糊匹配列表供用户选择
+                    ImportResult.MovieFuzzyMatch fuzzyMatch = new ImportResult.MovieFuzzyMatch();
+                    fuzzyMatch.setInputTitle(title);
+                    fuzzyMatch.setMatchedMovies(fuzzyMatches);
+                    result.getMovieFuzzyMatches().add(fuzzyMatch);
+                } else {
+                    // 无任何匹配结果
+                    notFoundMovies.add(title);
+                }
+            }
+            
+            // 4. 批量添加精确匹配的用户收藏记录
             List<UserMediaCollection> collections = new ArrayList<>();
             for (String title : titles) {
                 if (titleToMovieMap.containsKey(title)) {
@@ -177,7 +191,7 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                 }
             }
             
-            // 批量保存
+            // 5. 批量保存精确匹配的收藏
             if (!collections.isEmpty()) {
                 userMediaCollectionService.saveBatch(collections);
                 result.setSuccessMovieCount(collections.size());
@@ -196,28 +210,42 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
      */
     private void handleTVShowsImport(List<String> titles, Long userId, ImportResult result) {
         try {
-            // 查找数据库中已存在的电视剧
-            List<TVShow> existingTVShows = tvShowMapper.selectList(new LambdaQueryWrapper<TVShow>()
-                    .in(TVShow::getName, titles)
-                    .or().in(TVShow::getOriginalName, titles)
-            );
+            // 1. 先进行精确匹配
+            List<TVShow> exactMatches = tvShowMapper.findTVShowsByExactTitles(titles);
             
-            // 提取已存在电视剧的标题（包括原始标题）
-            Set<String> existingTVShowTitles = new HashSet<>();
+            // 2. 提取精确匹配的标题
+            Set<String> exactMatchTitles = new HashSet<>();
             Map<String, TVShow> titleToTVShowMap = new HashMap<>();
-            for (TVShow tvShow : existingTVShows) {
-                existingTVShowTitles.add(tvShow.getName());
-                existingTVShowTitles.add(tvShow.getOriginalName());
+            for (TVShow tvShow : exactMatches) {
+                exactMatchTitles.add(tvShow.getName());
+                exactMatchTitles.add(tvShow.getOriginalName());
                 titleToTVShowMap.put(tvShow.getName(), tvShow);
-                titleToTVShowMap.put(tvShow.getOriginalName(), tvShow);
+                if (tvShow.getOriginalName() != null) {
+                    titleToTVShowMap.put(tvShow.getOriginalName(), tvShow);
+                }
             }
             
-            // 找出不存在的电视剧标题
-            List<String> notFoundTVShows = titles.stream()
-                    .filter(title -> !existingTVShowTitles.contains(title))
+            // 3. 找出未精确匹配的标题，进行模糊匹配
+            List<String> unmatched = titles.stream()
+                    .filter(title -> !exactMatchTitles.contains(title))
                     .collect(Collectors.toList());
             
-            // 批量添加用户收藏记录
+            List<String> notFoundTVShows = new ArrayList<>();
+            for (String title : unmatched) {
+                List<TVShow> fuzzyMatches = tvShowMapper.findTVShowsByFuzzyTitle(title);
+                if (!fuzzyMatches.isEmpty()) {
+                    // 有模糊匹配结果，添加到模糊匹配列表供用户选择
+                    ImportResult.TVShowFuzzyMatch fuzzyMatch = new ImportResult.TVShowFuzzyMatch();
+                    fuzzyMatch.setInputTitle(title);
+                    fuzzyMatch.setMatchedTVShows(fuzzyMatches);
+                    result.getTvShowFuzzyMatches().add(fuzzyMatch);
+                } else {
+                    // 无任何匹配结果
+                    notFoundTVShows.add(title);
+                }
+            }
+            
+            // 4. 批量添加精确匹配的用户收藏记录
             List<UserMediaCollection> collections = new ArrayList<>();
             for (String title : titles) {
                 if (titleToTVShowMap.containsKey(title)) {
@@ -245,7 +273,7 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                 }
             }
             
-            // 批量保存
+            // 5. 批量保存精确匹配的收藏
             if (!collections.isEmpty()) {
                 userMediaCollectionService.saveBatch(collections);
                 result.setSuccessTVShowCount(collections.size());
@@ -367,22 +395,55 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
     @Override
     public SaResult movieDetail(Long query, Integer type) {
         MovieDto result = null;
+        
+        // 获取当前用户ID
+        String currentUserId = null;
+        try {
+            currentUserId = StpUtil.getLoginIdAsString();
+        } catch (Exception e) {
+            // 如果未登录，设置为null，不影响媒体详情的获取
+        }
+        
         switch (type){
             case 1:
                 Movie movies = baseMapper.selectOne(new LambdaQueryWrapper<Movie>().eq(Movie::getMovieId, query));
-                // 使用BeanUtil.copyToList复制列表
-                MovieDto movieDtos = BeanUtil.copyProperties(movies, MovieDto.class);
-                movieDtos.setId(movies.getMovieId());
-                movieDtos.setMediaType(1);
-                result = movieDtos;
+                if (movies != null) {
+                    // 使用BeanUtil.copyProperties复制属性
+                    MovieDto movieDtos = BeanUtil.copyProperties(movies, MovieDto.class);
+                    movieDtos.setId(movies.getMovieId());
+                    movieDtos.setMediaType(1);
+                    
+                    // 使用XML查询用户收藏状态
+                    if (currentUserId != null) {
+                        List<Integer> collectionStatuses = baseMapper.getUserMovieCollectionStatuses(
+                                Long.valueOf(currentUserId), movies.getMovieId());
+                        movieDtos.setCollectionStatuses(collectionStatuses);
+                    } else {
+                        movieDtos.setCollectionStatuses(new ArrayList<>());
+                    }
+                    
+                    result = movieDtos;
+                }
                 break;
             case 2:
                 TVShow shows = tvShowMapper.selectOne(new LambdaQueryWrapper<TVShow>().eq(TVShow::getShowId,query));
-                // 使用BeanUtil.copyToList将TVShow转换为MovieDto
-                MovieDto showDtos = BeanUtil.copyProperties(shows, MovieDto.class);
-                showDtos.setId(shows.getShowId().longValue());
-                showDtos.setMediaType(2);
-                result=showDtos;
+                if (shows != null) {
+                    // 使用BeanUtil.copyProperties将TVShow转换为MovieDto
+                    MovieDto showDtos = BeanUtil.copyProperties(shows, MovieDto.class);
+                    showDtos.setId(shows.getShowId().longValue());
+                    showDtos.setMediaType(2);
+                    
+                    // 使用XML查询用户收藏状态
+                    if (currentUserId != null) {
+                        List<Integer> collectionStatuses = tvShowMapper.getUserTVShowCollectionStatuses(
+                                Long.valueOf(currentUserId), shows.getShowId().longValue());
+                        showDtos.setCollectionStatuses(collectionStatuses);
+                    } else {
+                        showDtos.setCollectionStatuses(new ArrayList<>());
+                    }
+                    
+                    result = showDtos;
+                }
                 break;
         }
         return SaResult.ok().setData(result);
@@ -419,5 +480,285 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
     public SaResult getUserStatistics() {
         MovieQuery userStatistics = userMediaCollectionMapper.getUserStatistics(StpUtil.getLoginIdAsString(),2);
         return SaResult.ok().setData(userStatistics);
+    }
+    
+    @Override
+    public SaResult confirmFuzzyMatches(Long userId, List<Long> selectedMovies, List<Long> selectedTVShows) {
+        try {
+            List<UserMediaCollection> collections = new ArrayList<>();
+            int successCount = 0;
+            
+            // 处理电影选择
+            if (selectedMovies != null && !selectedMovies.isEmpty()) {
+                List<Movie> movies = baseMapper.selectBatchIds(selectedMovies);
+                for (Movie movie : movies) {
+                    // 检查是否已收藏
+                    UserMediaCollection existingCollection = userMediaCollectionService.getOne(new LambdaQueryWrapper<UserMediaCollection>()
+                            .eq(UserMediaCollection::getUserId, userId)
+                            .eq(UserMediaCollection::getMediaType, 1) // 1-电影
+                            .eq(UserMediaCollection::getMediaId, movie.getMovieId())
+                    );
+                    
+                    if (existingCollection == null) {
+                        UserMediaCollection collection = new UserMediaCollection();
+                        collection.setUserId(userId);
+                        collection.setMediaType(1); // 1-电影
+                        collection.setMediaId(movie.getMovieId());
+                        collection.setTitle(movie.getTitle());
+                        Object loginId = StpUtil.getLoginId();
+                        collection.setUserId(Long.valueOf(loginId.toString()));
+                        collection.setTmdbId(movie.getTmdbId());
+                        collection.setStatus(MovieStatusEnum.HASWATCHED.getValue());
+                        collection.setCreatedTime(LocalDateTime.now());
+                        collection.setUpdatedTime(LocalDateTime.now());
+                        collections.add(collection);
+                        successCount++;
+                    }
+                }
+            }
+            
+            // 处理电视剧选择
+            if (selectedTVShows != null && !selectedTVShows.isEmpty()) {
+                // 将Long列表转换为Integer列表，用于TVShow的ID类型
+                List<Integer> tvShowIds = selectedTVShows.stream()
+                        .map(Long::intValue)
+                        .collect(Collectors.toList());
+                List<TVShow> tvShows = tvShowMapper.selectBatchIds(tvShowIds);
+                for (TVShow tvShow : tvShows) {
+                    // 检查是否已收藏
+                    UserMediaCollection existingCollection = userMediaCollectionService.getOne(new LambdaQueryWrapper<UserMediaCollection>()
+                            .eq(UserMediaCollection::getUserId, userId)
+                            .eq(UserMediaCollection::getMediaType, 2) // 2-电视剧
+                            .eq(UserMediaCollection::getMediaId, tvShow.getShowId().longValue())
+                    );
+                    
+                    if (existingCollection == null) {
+                        UserMediaCollection collection = new UserMediaCollection();
+                        collection.setUserId(userId);
+                        collection.setMediaType(2); // 2-电视剧
+                        collection.setMediaId(tvShow.getShowId().longValue());
+                        collection.setTmdbId(tvShow.getTmdbId());
+                        collection.setTitle(tvShow.getName());
+                        Object loginId = StpUtil.getLoginId();
+                        collection.setUserId(Long.valueOf(loginId.toString()));
+                        collection.setStatus(MovieStatusEnum.HASWATCHED.getValue());
+                        collection.setCreatedTime(LocalDateTime.now());
+                        collection.setUpdatedTime(LocalDateTime.now());
+                        collections.add(collection);
+                        successCount++;
+                    }
+                }
+            }
+            
+            // 批量保存
+            if (!collections.isEmpty()) {
+                userMediaCollectionService.saveBatch(collections);
+            }
+            
+            return SaResult.ok("成功添加 " + successCount + " 个媒体到收藏列表");
+        } catch (Exception e) {
+            log.error("处理用户选择失败", e);
+            return SaResult.error("处理失败: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public SaResult batchAddMediaCollection(List<Long> mediaIds, Integer status, Integer mediaType) {
+        try {
+            String currentUserId = StpUtil.getLoginIdAsString();
+            Long userId = Long.valueOf(currentUserId);
+            
+            if (mediaIds == null || mediaIds.isEmpty()) {
+                return SaResult.error("媒体ID列表不能为空");
+            }
+            
+            if (status == null || (status != 1 && status != 2 && status != 3)) {
+                return SaResult.error("状态参数错误，必须为 1-已收藏, 2-已观看, 3-想看");
+            }
+            
+            if (mediaType == null || (mediaType != 1 && mediaType != 2)) {
+                return SaResult.error("媒体类型参数错误，必须为 1-电影, 2-电视剧");
+            }
+            
+            List<UserMediaCollection> collections = new ArrayList<>();
+            int successCount = 0;
+            int duplicateCount = 0;
+            
+            for (Long mediaId : mediaIds) {
+                // 检查是否已存在
+                UserMediaCollection existingCollection = userMediaCollectionService.getOne(new LambdaQueryWrapper<UserMediaCollection>()
+                        .eq(UserMediaCollection::getUserId, userId)
+                        .eq(UserMediaCollection::getMediaType, mediaType)
+                        .eq(UserMediaCollection::getMediaId, mediaId)
+                );
+                
+                if (existingCollection != null) {
+                    duplicateCount++;
+                    continue;
+                }
+                
+                // 获取媒体信息
+                String title = "";
+                Integer tmdbId = null;
+                
+                if (mediaType == 1) {
+                    // 电影
+                    Movie movie = baseMapper.selectById(mediaId);
+                    if (movie != null) {
+                        title = movie.getTitle();
+                        tmdbId = movie.getTmdbId();
+                    } else {
+                        log.warn("未找到ID为 {} 的电影", mediaId);
+                        continue;
+                    }
+                } else {
+                    // 电视剧
+                    TVShow tvShow = tvShowMapper.selectById(mediaId.intValue());
+                    if (tvShow != null) {
+                        title = tvShow.getName();
+                        tmdbId = tvShow.getTmdbId();
+                    } else {
+                        log.warn("未找到ID为 {} 的电视剧", mediaId);
+                        continue;
+                    }
+                }
+                
+                // 创建收藏记录
+                UserMediaCollection collection = new UserMediaCollection();
+                collection.setUserId(userId);
+                collection.setMediaType(mediaType);
+                collection.setMediaId(mediaId);
+                collection.setTmdbId(tmdbId);
+                collection.setTitle(title);
+                collection.setStatus(status);
+                collection.setCreatedTime(LocalDateTime.now());
+                collection.setUpdatedTime(LocalDateTime.now());
+                
+                collections.add(collection);
+                successCount++;
+            }
+            
+            // 批量保存
+            if (!collections.isEmpty()) {
+                userMediaCollectionService.saveBatch(collections);
+            }
+            
+            String message = String.format("批量添加完成！成功添加 %d 个媒体", successCount);
+            if (duplicateCount > 0) {
+                message += String.format("，跳过 %d 个已存在的媒体", duplicateCount);
+            }
+            
+            return SaResult.ok(message);
+        } catch (Exception e) {
+            log.error("批量添加媒体收藏失败", e);
+            return SaResult.error("批量添加失败: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public SaResult manageCollectionStatus(Long mediaId, Integer mediaType, Integer status, Boolean isAdd) {
+        try {
+            String currentUserId = StpUtil.getLoginIdAsString();
+            Long userId = Long.valueOf(currentUserId);
+            
+            // 参数验证
+            if (mediaId == null) {
+                return SaResult.error("媒体ID不能为空");
+            }
+            
+            if (mediaType == null || (mediaType != 1 && mediaType != 2)) {
+                return SaResult.error("媒体类型参数错误，必须为 1-电影, 2-电视剧");
+            }
+            
+            if (status == null || (status != 1 && status != 2 && status != 3)) {
+                return SaResult.error("状态参数错误，必须为 1-已收藏, 2-已观看, 3-想看");
+            }
+            
+            if (isAdd == null) {
+                return SaResult.error("操作类型不能为空");
+            }
+            
+            // 检查媒体是否存在
+            String mediaTitle = "";
+            Integer tmdbId = null;
+            
+            if (mediaType == 1) {
+                // 电影
+                Movie movie = baseMapper.selectById(mediaId);
+                if (movie == null) {
+                    return SaResult.error("电影不存在");
+                }
+                mediaTitle = movie.getTitle();
+                tmdbId = movie.getTmdbId();
+            } else {
+                // 电视剧
+                TVShow tvShow = tvShowMapper.selectById(mediaId.intValue());
+                if (tvShow == null) {
+                    return SaResult.error("电视剧不存在");
+                }
+                mediaTitle = tvShow.getName();
+                tmdbId = tvShow.getTmdbId();
+            }
+            
+            // 检查是否已存在该状态的收藏记录
+            UserMediaCollection existingCollection = userMediaCollectionService.getOne(new LambdaQueryWrapper<UserMediaCollection>()
+                    .eq(UserMediaCollection::getUserId, userId)
+                    .eq(UserMediaCollection::getMediaType, mediaType)
+                    .eq(UserMediaCollection::getMediaId, mediaId)
+                    .eq(UserMediaCollection::getStatus, status)
+            );
+            
+            if (isAdd) {
+                // 添加标识
+                if (existingCollection != null) {
+                    return SaResult.error("已经有该状态的标识了");
+                }
+                
+                // 创建新的收藏记录
+                UserMediaCollection collection = new UserMediaCollection();
+                collection.setUserId(userId);
+                collection.setMediaType(mediaType);
+                collection.setMediaId(mediaId);
+                collection.setTmdbId(tmdbId);
+                collection.setTitle(mediaTitle);
+                collection.setStatus(status);
+                collection.setCreatedTime(LocalDateTime.now());
+                collection.setUpdatedTime(LocalDateTime.now());
+                
+                userMediaCollectionService.save(collection);
+                
+                String statusText = getStatusText(status);
+                return SaResult.ok(String.format("成功添加「%s」标识", statusText));
+            } else {
+                // 取消标识
+                if (existingCollection == null) {
+                    return SaResult.error("该状态的标识不存在");
+                }
+                
+                userMediaCollectionService.removeById(existingCollection.getId());
+                
+                String statusText = getStatusText(status);
+                return SaResult.ok(String.format("成功取消「%s」标识", statusText));
+            }
+        } catch (Exception e) {
+            log.error("管理收藏状态失败", e);
+            return SaResult.error("操作失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取状态文本描述
+     */
+    private String getStatusText(Integer status) {
+        switch (status) {
+            case 1:
+                return "已收藏";
+            case 2:
+                return "已观看";
+            case 3:
+                return "想看";
+            default:
+                return "未知状态";
+        }
     }
 }

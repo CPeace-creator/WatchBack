@@ -6,6 +6,7 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.net.ConnectException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,9 +30,16 @@ public class SaTokenExceptionHandler {
         result.put("data", null);
         return result;
     }
-    
-    @ExceptionHandler(Exception.class)
+    @ExceptionHandler(SaTokenException.class)
     public Map<String, Object> handleSaTokenException(SaTokenException e) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("code", 500);
+        result.put("message", e.getMessage());
+        result.put("data", null);
+        return result;
+    }
+    @ExceptionHandler(ConnectException.class)
+    public Map<String, Object> handleConnection(ConnectException e) {
         Map<String, Object> result = new HashMap<>();
         result.put("code", 500);
         result.put("message", e.getMessage());
