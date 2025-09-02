@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cjh.watching.watchback.mapper.StatisticsMapper">
+    
+    <!-- 获取月度观影趋势数据 -->
+    <select id="getMonthlyTrend" resultType="java.util.Map">
+        WITH user_media AS (
+            SELECT
+                mc.media_id, 
+                mc.media_type,
+                mc.created_time
+            FROM user_media_collection mc
+            WHERE mc.user_id = #{userId}
+              AND mc.status = 2  -- 已观看状态
+              AND mc.media_type IN (1, 2)  -- 电影和电视剧
+              AND mc.created_time >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)  -- 最近6个月
+        )
+        SELECT
+            DATE_FORMAT(created_time, '%Y-%m') AS month,
+            COUNT(*) AS count
+        FROM user_media
+        GROUP BY DATE_FORMAT(created_time, '%Y-%m')
+        ORDER BY month ASC
+    </select>
+    
+    <!-- 获取类型分布数据 -->
+    <select id="getGenreDistribution" resultType="java.util.Map">
+        WITH user_media AS (
+            SELECT
+                mc.media_id,
+                mc.media_type,
+                umc.genre_ids
+            FROM user_media_collection mc
+                     INNER JOIN (
+                SELECT movie_id as media_id, 1 as media_type, genre_ids FROM movies
+                UNION ALL
+                SELECT show_id as media_id, 2 as media_type, genre_ids FROM tv_shows
+            ) umc ON umc.media_id = mc.media_id AND umc.media_type = mc.media_type
+            WHERE mc.user_id = #{userId}
+              AND mc.status = 2
+              AND mc.media_type IN (1, 2)
+        ),
+             genre_mapping AS (
+                SELECT 'ACTION' AS genre, 28 AS genre_id, '动作' AS genre_name UNION ALL
+                SELECT 'ADVENTURE', 12, '冒险' UNION ALL
+                SELECT 'ANIMATION', 16, '动画' UNION ALL
+                SELECT 'COMEDY', 35, '喜剧' UNION ALL
+                SELECT 'CRIME', 80, '犯罪' UNION ALL
+                SELECT 'DOCUMENTARY', 99, '纪录' UNION ALL
+                SELECT 'DRAMA', 18, '剧情' UNION ALL
+                SELECT 'FAMILY', 10751, '家庭' UNION ALL
+                SELECT 'FANTASY', 14, '奇幻' UNION ALL
+                SELECT 'HISTORY', 36, '历史' UNION ALL
+                SELECT 'HORROR', 27, '恐怖' UNION ALL
+                SELECT 'MUSIC', 10402, '音乐' UNION ALL
+                SELECT 'MYSTERY', 9648, '悬疑' UNION ALL
+                SELECT 'ROMANCE', 10749, '爱情' UNION ALL
+                SELECT 'SCI_FI', 878, '科幻' UNION ALL
+                SELECT 'TV_MOVIE', 10770, '电视电影' UNION ALL
+                SELECT 'THRILLER', 53, '惊悚' UNION ALL
+                SELECT 'WAR', 10752, '战争' UNION ALL
+                SELECT 'WESTERN', 37, '西部'
+            ),
+            genre_counts AS (
+                SELECT
+                    gm.genre_name,
+                    COUNT(*) as count
+                FROM user_media um
+                CROSS JOIN (SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4) n
+                JOIN genre_mapping gm ON gm.genre_id = CAST(JSON_UNQUOTE(JSON_EXTRACT(um.genre_ids, CONCAT('$[', n.n, ']'))) AS UNSIGNED)
+                WHERE JSON_LENGTH(um.genre_ids) > n.n
+                GROUP BY gm.genre_name
+            )
+        SELECT
+            genre_name,
+            count,
+            ROUND(count * 100.0 / (SELECT SUM(count) FROM genre_counts), 1) AS percentage
+        FROM genre_counts
+        ORDER BY count DESC
+        LIMIT 10
+    </select>
+    
+    <!-- 获取评分分布数据 -->
+    <select id="getRatingDistribution" resultType="java.util.Map">
+        WITH user_media AS (
+            SELECT
+                mc.media_id,
+                mc.media_type,
+                umc.vote_average
+            FROM user_media_collection mc
+                     INNER JOIN (
+                SELECT movie_id as media_id, 1 as media_type, vote_average FROM movies
+                UNION ALL
+                SELECT show_id as media_id, 2 as media_type, vote_average FROM tv_shows
+            ) umc ON umc.media_id = mc.media_id AND umc.media_type = mc.media_type
+            WHERE mc.user_id = #{userId}
+              AND mc.status = 2
+              AND mc.media_type IN (1, 2)
+        )
+        SELECT
+            CASE
+                WHEN vote_average >= 0 AND vote_average &lt; 1 THEN '0-1'
+                WHEN vote_average >= 1 AND vote_average &lt; 2 THEN '1-2'
+                WHEN vote_average >= 2 AND vote_average &lt; 3 THEN '2-3'
+                WHEN vote_average >= 3 AND vote_average &lt; 4 THEN '3-4'
+                WHEN vote_average >= 4 AND vote_average &lt; 5 THEN '4-5'
+                WHEN vote_average >= 5 AND vote_average &lt;6 THEN '5-6'
+                WHEN vote_average >= 6 AND vote_average &lt; 7 THEN '6-7'
+                WHEN vote_average >= 7 AND vote_average &lt; 8 THEN '7-8'
+                WHEN vote_average >= 8 AND vote_average &lt; 9 THEN '8-9'
+                WHEN vote_average >= 9 THEN '9-10'
+                ELSE 'Unknown'
+            END AS rating_range,
+            COUNT(*) AS count
+        FROM user_media
+        GROUP BY rating_range
+        ORDER BY rating_range
+    </select>
+    
+    <!-- 获取年度报告数据 -->
+    <select id="getYearlyReport" resultType="java.util.Map">
+        WITH user_media AS (
+            SELECT
+                mc.media_id,
+                mc.media_type,
+                mc.created_time,
+                umc.vote_average,
+                umc.genre_ids
+            FROM user_media_collection mc
+                     INNER JOIN (
+                SELECT movie_id as media_id, 1 as media_type, vote_average, genre_ids FROM movies
+                UNION ALL
+                SELECT show_id as media_id, 2 as media_type, vote_average, genre_ids FROM tv_shows
+            ) umc ON umc.media_id = mc.media_id AND umc.media_type = mc.media_type
+            WHERE mc.user_id = #{userId}
+              AND mc.status = 2
+              AND mc.media_type IN (1, 2)
+              AND YEAR(mc.created_time) = YEAR(CURDATE())
+        ),
+             genre_counts AS (
+                SELECT
+                    JSON_UNQUOTE(JSON_EXTRACT(um.genre_ids, CONCAT('$[', n.n, ']'))) as genre_id,
+                    COUNT(*) as count
+                FROM user_media um
+                CROSS JOIN (SELECT 0 as n UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4) n
+                WHERE JSON_LENGTH(um.genre_ids) > n.n
+                GROUP BY JSON_UNQUOTE(JSON_EXTRACT(um.genre_ids, CONCAT('$[', n.n, ']')))
+            )
+        SELECT
+            COUNT(*) as totalWatched,
+            ROUND(AVG(vote_average), 1) as averageRating,
+            (SELECT COUNT(*) FROM user_media WHERE media_type = 1) as movieCount,
+            (SELECT COUNT(*) FROM user_media WHERE media_type = 2) as tvShowCount,
+            (SELECT COALESCE(genre_id, 0) FROM genre_counts ORDER BY count DESC LIMIT 1) as favoriteGenre
+        FROM user_media
+    </select>
+    
+    <!-- 获取收藏的电影总数 -->
+    <select id="getMovieCount" resultType="java.lang.Integer">
+        SELECT COUNT(*) 
+        FROM user_media_collection 
+        WHERE user_id = #{userId}
+          AND media_type = 1
+          AND status = 2
+    </select>
+    
+    <!-- 获取收藏的电视剧总数 -->
+    <select id="getTvShowCount" resultType="java.lang.Integer">
+        SELECT COUNT(*) 
+        FROM user_media_collection 
+        WHERE user_id = #{userId}
+          AND media_type = 2
+          AND status = 2
+    </select>
+</mapper>
