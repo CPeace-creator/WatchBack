@@ -4,11 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaIgnore;
 import cn.dev33.satoken.util.SaResult;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.cjh.watching.watchback.dto.BatchAddMediaRequest;
-import com.cjh.watching.watchback.dto.CollectionStatusRequest;
-import com.cjh.watching.watchback.dto.FuzzyMatchRequest;
-import com.cjh.watching.watchback.dto.MovieDto;
-import com.cjh.watching.watchback.dto.MovieQuery;
+import com.cjh.watching.watchback.dto.*;
 import com.cjh.watching.watchback.entity.Movie;
 import com.cjh.watching.watchback.service.MovieService;
 import com.cjh.watching.watchback.utils.PageRequest;
@@ -141,5 +137,25 @@ public class MovieController {
     public SaResult manageCollectionStatus(@RequestBody CollectionStatusRequest request) {
         return movieService.manageCollectionStatus(request.getMediaId(), request.getMediaType(), 
                 request.getStatus(), request.getIsAdd());
+    }
+
+    /**
+     * 通过Python脚本搜索电影/电视剧
+     * @param request 搜索请求参数
+     * @return 搜索结果
+     */
+    @PostMapping("/searchByPythonScript")
+    public SaResult searchByPythonScript(@RequestBody MovieSearchRequest request) {
+        return movieService.searchByPythonScript(request.getTitle(), request.getMediaType());
+    }
+    
+    /**
+     * 根据Python脚本返回的搜索结果自动保存电影/电视剧并建立用户关系
+     * @param searchResultDto Python脚本返回的搜索结果
+     * @return 处理结果
+     */
+    @PostMapping("/autoSaveFromPythonResult")
+    public SaResult autoSaveFromPythonResult(@RequestBody PythonSearchResultDto searchResultDto) {
+        return movieService.autoSaveFromPythonResult(searchResultDto);
     }
 }

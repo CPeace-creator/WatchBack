@@ -7,6 +7,7 @@ import cn.hutool.core.date.DateUtil;
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.read.listener.ReadListener;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -14,6 +15,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cjh.watching.watchback.dto.MovieDto;
 import com.cjh.watching.watchback.dto.MovieQuery;
+import com.cjh.watching.watchback.dto.PythonSearchResultDto;
 import com.cjh.watching.watchback.entity.Movie;
 import com.cjh.watching.watchback.entity.TVShow;
 import com.cjh.watching.watchback.entity.UserMediaCollection;
@@ -25,15 +27,19 @@ import com.cjh.watching.watchback.service.MovieService;
 import com.cjh.watching.watchback.service.UserMediaCollectionService;
 import com.cjh.watching.watchback.utils.ImportResult;
 import com.cjh.watching.watchback.utils.PageRequest;
+import com.cjh.watching.watchback.utils.PythonScriptExecutor;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -55,6 +61,9 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
     
     @Resource
     private TVShowMapper tvShowMapper;
+
+    @Autowired
+    private PythonScriptExecutor pythonScriptExecutor;
 
 
     @Override
@@ -764,4 +773,252 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                 return "未知状态";
         }
     }
+
+    @Override
+    public SaResult searchByPythonScript(String title, Integer mediaType) {
+        try {
+            if (title == null || title.trim().isEmpty()) {
+                return SaResult.error("搜索标题不能为空");
+            }
+
+            if (mediaType == null || (mediaType != 1 && mediaType != 2)) {
+                return SaResult.error("媒体类型参数错误，必须为 1-电视剧, 2-电影");
+            }
+
+            // 调用Python脚本执行器执行movie_scraper_test.py
+            String pythonScriptPath = "py/movie_scraper_test.py";
+            String[] params = {title, mediaType.toString()};
+            int timeoutMs = 30000; // 30秒超时
+
+            String result = pythonScriptExecutor.executePythonScriptSafe(pythonScriptPath, params, timeoutMs);
+
+            // 检查结果是否为空
+            if (result == null || result.trim().isEmpty()) {
+                return SaResult.error("Python脚本执行失败，返回结果为空");
+            }
+
+            // 返回执行结果
+            return SaResult.ok().setData(JSONObject.parse(result));
+        } catch (Exception e) {
+            log.error("Python脚本执行失败", e);
+            return SaResult.error("脚本执行失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 通过标题获取电影
+     */
+    private Movie getMovieByTitle(String title) {
+        try {
+            return baseMapper.selectOne(new LambdaQueryWrapper<Movie>()
+                    .eq(Movie::getTitle, title)
+                    .or().eq(Movie::getOriginalTitle, title)
+                    .last("LIMIT 1")
+            );
+        } catch (Exception e) {
+            log.error("通过标题获取电影失败", e);
+            return null;
+        }
+    }
+    
+    /**
+     * 通过标题获取电视剧
+     */
+    private TVShow getTVShowByTitle(String title) {
+        try {
+            return tvShowMapper.selectOne(new LambdaQueryWrapper<TVShow>()
+                    .eq(TVShow::getName, title)
+                    .or().eq(TVShow::getOriginalName, title)
+                    .last("LIMIT 1")
+            );
+        } catch (Exception e) {
+            log.error("通过标题获取电视剧失败", e);
+            return null;
+        }
+    }
+    
+    @Override
+    public SaResult autoSaveFromPythonResult(PythonSearchResultDto searchResultDto) {
+        try {
+            // 参数校验
+            if (searchResultDto == null) {
+                return SaResult.error("搜索结果不能为空");
+            }
+            if (searchResultDto.getMedia_type() == null || (searchResultDto.getMedia_type() != 1 && searchResultDto.getMedia_type() != 2)) {
+                return SaResult.error("媒体类型无效，必须是1（电视剧）或2（电影）");
+            }
+            if (searchResultDto.getResults() == null || searchResultDto.getResults().isEmpty()) {
+                return SaResult.error("搜索结果列表为空");
+            }
+
+            // 获取第一个搜索结果进行保存
+            PythonSearchResultDto.SearchResultItem resultItem = searchResultDto.getResults().get(0);
+            String title = resultItem.getTitle();
+            Integer mediaType = searchResultDto.getMedia_type();
+            
+            // 创建保存结果对象
+            Map<String, Object> resultMap = new HashMap<>();
+            resultMap.put("original_title", title);
+            resultMap.put("media_type", mediaType);
+            
+            // 根据媒体类型执行不同的保存逻辑
+            if (mediaType == 1) { // 电视剧
+                // 检查电视剧是否已存在
+                TVShow existingTVShow = getTVShowByTitle(title);
+                if (existingTVShow != null) {
+                    // 电视剧已存在，直接使用已存在的ID建立用户关系
+                    resultMap.put("status", "exists_and_saved");
+                    resultMap.put("message", "电视剧已存在，已添加到用户收藏");
+                    resultMap.put("tv_show_id", existingTVShow.getShowId());
+                    
+                    // 创建MovieDto用于saveMovie方法
+                    MovieDto movieDto = new MovieDto();
+                    movieDto.setId(existingTVShow.getShowId().longValue());
+                    movieDto.setTitle(title);
+                    movieDto.setMediaType(1);
+                    movieDto.setTmdbId(existingTVShow.getTmdbId());
+                    
+                    // 调用saveMovie方法建立用户关系
+                    SaResult saveResult = saveMovie(movieDto);
+                    if (saveResult.getCode() != 200) {
+                        return saveResult;
+                    }
+                    
+                    return SaResult.ok().setData(resultMap);
+                }
+                
+                // 创建新的电视剧记录
+                TVShow tvShow = new TVShow();
+                tvShow.setName(title);
+                tvShow.setOriginalName(title);
+                tvShow.setOverview(resultItem.getDescription());
+                
+                // 处理发布日期
+                if (resultItem.getRelease_date() != null && !resultItem.getRelease_date().isEmpty()) {
+                    try {
+                        // 尝试解析日期，格式可能是 "2019-06-05(中国大陆)"，需要提取日期部分
+                        String dateStr = resultItem.getRelease_date().split("\\(")[0].trim();
+                        tvShow.setFirstAirDate(LocalDate.parse(dateStr));
+                    } catch (Exception e) {
+                        log.warn("解析电视剧发布日期失败: {}", e.getMessage());
+                    }
+                }
+                
+                // 设置其他属性
+                if (resultItem.getRating() != null) {
+                    tvShow.setVoteAverage(BigDecimal.valueOf(resultItem.getRating()));
+                }
+                tvShow.setPosterPath(resultItem.getCover_image());
+                tvShow.setTmdbId(0); // 根据要求设置为0
+                tvShow.setSourceApi("python_script");
+                // 添加getByRecent查询中需要的字段
+                tvShow.setPopularity(BigDecimal.valueOf(0.0));
+                tvShow.setVoteCount(0);
+                tvShow.setGenreIds("[]");
+                tvShow.setOriginalLanguage("zh");
+                tvShow.setBackdropPath(resultItem.getCover_image());
+                
+                // 保存电视剧
+                tvShowMapper.insert(tvShow);
+                
+                // 创建MovieDto用于saveMovie方法
+                MovieDto movieDto = new MovieDto();
+                movieDto.setId(tvShow.getShowId().longValue());
+                movieDto.setTitle(title);
+                movieDto.setMediaType(1);
+                movieDto.setTmdbId(0);
+                
+                // 调用saveMovie方法建立用户关系
+                SaResult saveResult = saveMovie(movieDto);
+                if (saveResult.getCode() != 200) {
+                    return saveResult;
+                }
+                
+                resultMap.put("status", "success");
+                resultMap.put("message", "电视剧保存成功并添加到用户收藏");
+                resultMap.put("tv_show_id", tvShow.getShowId());
+            } else if (mediaType == 2) { // 电影
+                // 检查电影是否已存在
+                Movie existingMovie = getMovieByTitle(title);
+                if (existingMovie != null) {
+                    // 电影已存在，直接使用已存在的ID建立用户关系
+                    resultMap.put("status", "exists_and_saved");
+                    resultMap.put("message", "电影已存在，已添加到用户收藏");
+                    resultMap.put("movie_id", existingMovie.getMovieId());
+                    
+                    // 创建MovieDto用于saveMovie方法
+                    MovieDto movieDto = new MovieDto();
+                    movieDto.setId(existingMovie.getMovieId());
+                    movieDto.setTitle(title);
+                    movieDto.setMediaType(2);
+                    movieDto.setTmdbId(existingMovie.getTmdbId());
+                    
+                    // 调用saveMovie方法建立用户关系
+                    SaResult saveResult = saveMovie(movieDto);
+                    if (saveResult.getCode() != 200) {
+                        return saveResult;
+                    }
+                    
+                    return SaResult.ok().setData(resultMap);
+                }
+                
+                // 创建新的电影记录
+                Movie movie = new Movie();
+                movie.setTitle(title);
+                movie.setOriginalTitle(title);
+                movie.setOverview(resultItem.getDescription());
+                
+                // 处理发布日期
+                if (resultItem.getRelease_date() != null && !resultItem.getRelease_date().isEmpty()) {
+                    try {
+                        // 尝试解析日期，格式可能是 "2019-06-05(中国大陆)"，需要提取日期部分
+                        String dateStr = resultItem.getRelease_date().split("\\(")[0].trim();
+                        movie.setReleaseDate(LocalDateTime.parse(dateStr + "T00:00:00"));
+                    } catch (Exception e) {
+                        log.warn("解析电影发布日期失败: {}", e.getMessage());
+                    }
+                }
+                
+                // 设置其他属性
+                if (resultItem.getRating() != null) {
+                    movie.setVoteAverage(BigDecimal.valueOf(resultItem.getRating()));
+                }
+                movie.setPosterPath(resultItem.getCover_image());
+                movie.setTmdbId(0); // 根据要求设置为0
+                movie.setIfDel(0);
+                // 添加getByRecent查询中需要的字段
+                movie.setPopularity(BigDecimal.valueOf(0.0));
+                movie.setVoteCount(0);
+                movie.setGenreIds("[]");
+                movie.setOriginalLanguage("zh");
+                movie.setBackdropPath(resultItem.getCover_image());
+                
+                // 保存电影
+                baseMapper.insert(movie);
+                
+                // 创建MovieDto用于saveMovie方法
+                MovieDto movieDto = new MovieDto();
+                movieDto.setId(movie.getMovieId());
+                movieDto.setTitle(title);
+                movieDto.setMediaType(2);
+                movieDto.setTmdbId(0);
+                
+                // 调用saveMovie方法建立用户关系
+                SaResult saveResult = saveMovie(movieDto);
+                if (saveResult.getCode() != 200) {
+                    return saveResult;
+                }
+                
+                resultMap.put("status", "success");
+                resultMap.put("message", "电影保存成功并添加到用户收藏");
+                resultMap.put("movie_id", movie.getMovieId());
+            }
+            
+            return SaResult.ok().setData(resultMap);
+        } catch (Exception e) {
+            log.error("自动保存搜索结果失败", e);
+            return SaResult.error("保存失败：" + e.getMessage());
+        }
+    }
+    
 }

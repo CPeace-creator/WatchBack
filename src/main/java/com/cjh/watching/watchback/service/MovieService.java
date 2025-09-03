@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cjh.watching.watchback.dto.MovieDto;
 import com.cjh.watching.watchback.dto.MovieQuery;
+import com.cjh.watching.watchback.dto.PythonSearchResultDto;
 import com.cjh.watching.watchback.entity.Movie;
 import com.cjh.watching.watchback.utils.PageRequest;
 import org.springframework.web.multipart.MultipartFile;
@@ -59,5 +60,19 @@ public interface MovieService extends IService<Movie> {
      */
     SaResult manageCollectionStatus(Long mediaId, Integer mediaType, Integer status, Boolean isAdd);
 
+    /**
+     * 通过Python脚本搜索电影/电视剧
+     * @param title 搜索的标题
+     * @param mediaType 媒体类型：1表示电视剧，2表示电影
+     * @return 搜索结果
+     */
+    SaResult searchByPythonScript(String title, Integer mediaType);
+    
+    /**
+     * 根据Python脚本返回的搜索结果自动保存电影/电视剧并建立用户关系
+     * @param searchResultDto Python脚本返回的搜索结果
+     * @return 处理结果
+     */
+    SaResult autoSaveFromPythonResult(PythonSearchResultDto searchResultDto);
 
 }
