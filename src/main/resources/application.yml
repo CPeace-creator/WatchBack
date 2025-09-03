@@ -59,3 +59,10 @@ xxl:
 logging:
   level:
     com.cjh.watching.watchback.mapper: debug
+# Minio 配置
+minio:
+  endpoint:  127.0.0.1:9000
+  accessKey: admin123
+  secretKey: admin123
+  bucketName: watch
+
