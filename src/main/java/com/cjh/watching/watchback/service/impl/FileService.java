@@ -7,6 +7,7 @@ package com.cjh.watching.watchback.service.impl;
 
 import com.cjh.watching.watchback.adapter.StorageAdapter;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -43,7 +44,7 @@ public class FileService {
     /**
      * 上传文件
      */
-    public String uploadFile(MultipartFile uploadFile, String bucket, String objectName){
+    public String uploadFile(@RequestBody MultipartFile uploadFile, @RequestBody String bucket, @RequestBody String objectName){
         storageAdapter.uploadFile(uploadFile,bucket,objectName);
         objectName = objectName + "/" + uploadFile.getOriginalFilename();
         return storageAdapter.getUrl(bucket, objectName);

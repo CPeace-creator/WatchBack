@@ -7,6 +7,7 @@ package com.cjh.watching.watchback.controller;
 import cn.dev33.satoken.util.SaResult;
 import com.cjh.watching.watchback.service.impl.FileService;
 import jakarta.annotation.Resource;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,7 +39,7 @@ public class FileController {
     /**
      * 上传文件
      */
-    @RequestMapping("/upload")
+    @PostMapping("/upload")
     public SaResult upload(MultipartFile uploadFile, String bucket, String objectName) throws Exception {
         String url = fileService.uploadFile(uploadFile, bucket, objectName);
         return SaResult.ok().setData( url);

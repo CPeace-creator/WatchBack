@@ -61,8 +61,11 @@ logging:
     com.cjh.watching.watchback.mapper: debug
 # Minio 配置
 minio:
-  endpoint:  127.0.0.1:9000
-  accessKey: admin123
+  endpoint:  http://localhost:9000
+  accessKey: admin
   secretKey: admin123
   bucketName: watch
+storage:
+  service:
+    type: minio
 
