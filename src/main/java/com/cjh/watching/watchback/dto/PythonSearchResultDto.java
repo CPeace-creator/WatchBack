@@ -76,6 +76,7 @@ public class PythonSearchResultDto {
         private String cover_image;
         private String source;
         private String title;
+        private String genres;
         private String type;
 
         public String getRelease_date() {
@@ -156,6 +157,14 @@ public class PythonSearchResultDto {
 
         public void setType(String type) {
             this.type = type;
+        }
+
+        public String getGenres() {
+            return genres;
+        }
+
+        public void setGenres(String genres) {
+            this.genres = genres;
         }
     }
 }

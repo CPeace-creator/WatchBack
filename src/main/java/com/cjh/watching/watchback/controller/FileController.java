@@ -44,6 +44,27 @@ public class FileController {
         String url = fileService.uploadFile(uploadFile, bucket, objectName);
         return SaResult.ok().setData( url);
     }
+    
+    /**
+     * 从网络链接上传文件
+     */
+    @PostMapping("/uploadFromUrl")
+    public SaResult uploadFromUrl(String fileUrl, String bucket, String objectName) throws Exception {
+        String url = fileService.uploadFileFromUrl(fileUrl, bucket, objectName);
+        return SaResult.ok().setData(url);
+    }
+    
+    /**
+     * 删除文件
+     */
+    @PostMapping("/deleteFile")
+    public SaResult deleteFile(String bucket, String objectName) {
+        try {
+            fileService.deleteFile(bucket, objectName);
+            return SaResult.ok("文件删除成功");
+        } catch (Exception e) {
+            return SaResult.error("文件删除失败: " + e.getMessage());
+        }
+    }
 
 }
-

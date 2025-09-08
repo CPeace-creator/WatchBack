@@ -65,7 +65,13 @@ minio:
   accessKey: admin
   secretKey: admin123
   bucketName: watch
+# RustFS 配置
+rustfs:
+  endpoint: http://localhost:9000
+  accessKey: rustfsadmin
+  secretKey: rustfsadmin
+  region: us-east-1
+  defaultBucket: watch
 storage:
   service:
-    type: minio
-
+    type: rustfs

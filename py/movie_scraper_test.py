@@ -30,9 +30,9 @@ class MovieScraper:
         
     def get_movie_details(self, movie_url):
         """
-        从电影/电视剧的详细页面获取更多信息，包括剧情简介和精确的发布日期
+        从电影/电视剧的详细页面获取更多信息，包括剧情简介、精确的发布日期和类型
         :param movie_url: 电影/电视剧的详细页面URL
-        :return: 包含剧情简介和发布日期的字典
+        :return: 包含剧情简介、发布日期和类型的字典
         """
         try:
             # 发送请求到详细页面
@@ -58,9 +58,16 @@ class MovieScraper:
             if date_elem:
                 release_date = date_elem.text.strip()
             
+            # 获取类型信息
+            genres = []
+            genre_elems = soup.find_all('span', property="v:genre")
+            if genre_elems:
+                genres = [elem.text.strip() for elem in genre_elems]
+            
             return {
                 'summary': summary,
-                'release_date': release_date
+                'release_date': release_date,
+                'genres': genres
             }
         except Exception as e:
             # 静默处理异常，返回空字典
@@ -152,6 +159,10 @@ class MovieScraper:
                                         'scraped_at': time.strftime('%Y-%m-%d %H:%M:%S')
                                     }
                                     
+                                    # 添加类型信息
+                                    if details and details.get('genres'):
+                                        result_info['genres'] = details.get('genres')
+                                    
                                     # 如果找到精确发布日期，添加到结果字典
                                     if release_date:
                                         result_info['release_date'] = release_date
@@ -214,6 +225,15 @@ class MovieScraper:
                         'source': f'douban_{search_type}_search',
                         'scraped_at': time.strftime('%Y-%m-%d %H:%M:%S')
                     }
+                    
+                    # 尝试获取类型信息
+                    try:
+                        details = self.get_movie_details(link)
+                        if details and details.get('genres'):
+                            result_info['genres'] = details.get('genres')
+                    except:
+                        # 静默处理异常
+                        pass
                     
                     results.append(result_info)
             

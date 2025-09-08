@@ -862,7 +862,7 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
             resultMap.put("media_type", mediaType);
             
             // 根据媒体类型执行不同的保存逻辑
-            if (mediaType == 1) { // 电视剧
+            if (mediaType == 2) { // 电视剧
                 // 检查电视剧是否已存在
                 TVShow existingTVShow = getTVShowByTitle(title);
                 if (existingTVShow != null) {
@@ -875,7 +875,7 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                     MovieDto movieDto = new MovieDto();
                     movieDto.setId(existingTVShow.getShowId().longValue());
                     movieDto.setTitle(title);
-                    movieDto.setMediaType(1);
+                    movieDto.setMediaType(2);
                     movieDto.setTmdbId(existingTVShow.getTmdbId());
                     
                     // 调用saveMovie方法建立用户关系
@@ -914,18 +914,23 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                 // 添加getByRecent查询中需要的字段
                 tvShow.setPopularity(BigDecimal.valueOf(0.0));
                 tvShow.setVoteCount(0);
-                tvShow.setGenreIds("[]");
+                // 设置genres作为genreIds
+                if (resultItem.getGenres() != null) {
+                    tvShow.setGenreIds(resultItem.getGenres().toString());
+                } else {
+                    tvShow.setGenreIds("[]");
+                }
                 tvShow.setOriginalLanguage("zh");
                 tvShow.setBackdropPath(resultItem.getCover_image());
                 
                 // 保存电视剧
-                tvShowMapper.insert(tvShow);
+                tvShowMapper.insert(tvShow);    
                 
                 // 创建MovieDto用于saveMovie方法
                 MovieDto movieDto = new MovieDto();
                 movieDto.setId(tvShow.getShowId().longValue());
                 movieDto.setTitle(title);
-                movieDto.setMediaType(1);
+                movieDto.setMediaType(2);
                 movieDto.setTmdbId(0);
                 
                 // 调用saveMovie方法建立用户关系
@@ -937,7 +942,7 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                 resultMap.put("status", "success");
                 resultMap.put("message", "电视剧保存成功并添加到用户收藏");
                 resultMap.put("tv_show_id", tvShow.getShowId());
-            } else if (mediaType == 2) { // 电影
+            } else if (mediaType == 1) { // 电影
                 // 检查电影是否已存在
                 Movie existingMovie = getMovieByTitle(title);
                 if (existingMovie != null) {
@@ -950,7 +955,7 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                     MovieDto movieDto = new MovieDto();
                     movieDto.setId(existingMovie.getMovieId());
                     movieDto.setTitle(title);
-                    movieDto.setMediaType(2);
+                    movieDto.setMediaType(1);
                     movieDto.setTmdbId(existingMovie.getTmdbId());
                     
                     // 调用saveMovie方法建立用户关系
@@ -989,7 +994,12 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                 // 添加getByRecent查询中需要的字段
                 movie.setPopularity(BigDecimal.valueOf(0.0));
                 movie.setVoteCount(0);
-                movie.setGenreIds("[]");
+                // 设置genres作为genreIds
+                if (resultItem.getGenres() != null) {
+                    movie.setGenreIds(resultItem.getGenres().toString());
+                } else {
+                    movie.setGenreIds("[]");
+                }
                 movie.setOriginalLanguage("zh");
                 movie.setBackdropPath(resultItem.getCover_image());
                 
@@ -1000,7 +1010,7 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                 MovieDto movieDto = new MovieDto();
                 movieDto.setId(movie.getMovieId());
                 movieDto.setTitle(title);
-                movieDto.setMediaType(2);
+                movieDto.setMediaType(1);
                 movieDto.setTmdbId(0);
                 
                 // 调用saveMovie方法建立用户关系

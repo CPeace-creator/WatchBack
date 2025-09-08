@@ -32,12 +32,19 @@ public class MinioStorageAdapter implements StorageAdapter {
      */
     @Value("${minio.endpoint}")
     private String url;
+    
+    /**
+     * minio默认bucket
+     */
+    @Value("${minio.bucketName}")
+    private String defaultBucket;
 
     @Override
     @SneakyThrows
     public void createBucket(String bucket) {
        try{
-           minioUtil.createBucket(bucket);
+           String bucketName = (bucket != null && !bucket.isEmpty()) ? bucket : defaultBucket;
+           minioUtil.createBucket(bucketName);
        }catch (Exception e){
            e.printStackTrace();
        }
@@ -47,11 +54,12 @@ public class MinioStorageAdapter implements StorageAdapter {
     @SneakyThrows
     public void uploadFile(MultipartFile uploadFile, String bucket, String objectName) {
         try {
-            minioUtil.createBucket(bucket);
+            String bucketName = (bucket != null && !bucket.isEmpty()) ? bucket : defaultBucket;
+            minioUtil.createBucket(bucketName);
             if (objectName != null) {
-                minioUtil.uploadFile(uploadFile.getInputStream(), bucket, objectName + "/" + uploadFile.getOriginalFilename());
+                minioUtil.uploadFile(uploadFile.getInputStream(), bucketName, objectName + "/" + uploadFile.getOriginalFilename());
             } else {
-                minioUtil.uploadFile(uploadFile.getInputStream(), bucket, uploadFile.getOriginalFilename());
+                minioUtil.uploadFile(uploadFile.getInputStream(), bucketName, uploadFile.getOriginalFilename());
             }
         }catch (Exception e){
             e.printStackTrace();
@@ -73,7 +81,8 @@ public class MinioStorageAdapter implements StorageAdapter {
     @SneakyThrows
     public List<FileInfo> getAllFile(String bucket) {
         try{
-            return minioUtil.getAllFile(bucket);
+            String bucketName = (bucket != null && !bucket.isEmpty()) ? bucket : defaultBucket;
+            return minioUtil.getAllFile(bucketName);
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -84,7 +93,8 @@ public class MinioStorageAdapter implements StorageAdapter {
     @SneakyThrows
     public InputStream downLoad(String bucket, String objectName) {
         try{
-             return minioUtil.downLoad(bucket, objectName);
+             String bucketName = (bucket != null && !bucket.isEmpty()) ? bucket : defaultBucket;
+             return minioUtil.downLoad(bucketName, objectName);
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -96,7 +106,8 @@ public class MinioStorageAdapter implements StorageAdapter {
     @SneakyThrows
     public void deleteBucket(String bucket) {
         try{
-            minioUtil.deleteBucket(bucket);
+            String bucketName = (bucket != null && !bucket.isEmpty()) ? bucket : defaultBucket;
+            minioUtil.deleteBucket(bucketName);
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -106,7 +117,8 @@ public class MinioStorageAdapter implements StorageAdapter {
     @SneakyThrows
     public void deleteObject(String bucket, String objectName) {
         try{
-            minioUtil.deleteObject(bucket, objectName);
+            String bucketName = (bucket != null && !bucket.isEmpty()) ? bucket : defaultBucket;
+            minioUtil.deleteObject(bucketName, objectName);
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -116,7 +128,8 @@ public class MinioStorageAdapter implements StorageAdapter {
     @SneakyThrows
     public String getUrl(String bucket, String objectName) {
         try{
-            return url + "/" + bucket + "/" + objectName;
+            String bucketName = (bucket != null && !bucket.isEmpty()) ? bucket : defaultBucket;
+            return url + "/" + bucketName + "/" + objectName;
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -124,4 +137,3 @@ public class MinioStorageAdapter implements StorageAdapter {
     }
 
 }
-

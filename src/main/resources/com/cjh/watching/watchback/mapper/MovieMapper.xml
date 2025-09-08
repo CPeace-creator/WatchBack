@@ -116,4 +116,13 @@
              ) t
             limit 10
     </select>
+
+    <select id="getUserMovieCollectionStatuses" resultType="java.lang.Integer">
+        SELECT status
+        FROM user_media_collection
+        WHERE user_id = #{userId}
+          AND media_type = 1
+          AND media_id = #{mediaId}
+        ORDER BY status ASC
+    </select>
 </mapper>
