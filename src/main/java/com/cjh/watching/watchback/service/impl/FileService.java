@@ -88,9 +88,45 @@ public class FileService {
     private byte[] downloadFileFromUrl(String fileUrl) throws Exception {
         URL url = new URL(fileUrl);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        
+        // 设置请求方法
         connection.setRequestMethod("GET");
+        
+        // 设置超时时间
         connection.setConnectTimeout(5000);
         connection.setReadTimeout(5000);
+        
+        // 添加HTTP请求头以模拟浏览器行为，解决403 Forbidden问题
+        connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+        connection.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
+        connection.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
+        
+        // 尝试获取响应代码
+        int responseCode = connection.getResponseCode();
+        if (responseCode != HttpURLConnection.HTTP_OK) {
+            // 如果遇到403错误，可以尝试添加Referer头
+            if (responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
+                // 关闭当前连接
+                connection.disconnect();
+                
+                // 创建新的连接并添加Referer头
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+                connection.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
+                connection.setRequestProperty("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8");
+                connection.setRequestProperty("Referer", "https://www.douban.com/"); // 为豆瓣图片添加Referer
+                
+                responseCode = connection.getResponseCode();
+                if (responseCode != HttpURLConnection.HTTP_OK) {
+                    throw new IOException("Server returned HTTP response code: " + responseCode + " for URL: " + fileUrl);
+                }
+            } else {
+                throw new IOException("Server returned HTTP response code: " + responseCode + " for URL: " + fileUrl);
+            }
+        }
         
         try (InputStream inputStream = connection.getInputStream();
              ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
