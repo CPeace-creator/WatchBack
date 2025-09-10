@@ -48,8 +48,8 @@ public class RustFSStorageAdapter implements StorageAdapter {
     @SneakyThrows
     public void uploadFile(MultipartFile uploadFile, String bucket, String objectName) {
         try {
-            String bucketName = (bucket != null && !bucket.isEmpty()) ? bucket : defaultBucket;
-            rustFSConfig.createBucket(bucketName);
+//            String bucketName = (bucket != null && !bucket.isEmpty()) ? bucket : defaultBucket;
+//            rustFSConfig.createBucket(bucketName);
             if (objectName != null) {
                 rustFSConfig.putObject(objectName + "/" + uploadFile.getOriginalFilename(), uploadFile.getInputStream(), 
                     uploadFile.getSize(), uploadFile.getContentType());
