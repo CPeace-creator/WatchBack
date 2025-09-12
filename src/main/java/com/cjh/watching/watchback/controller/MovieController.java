@@ -159,4 +159,24 @@ public class MovieController {
     public SaResult autoSaveFromPythonResult(@RequestBody PythonSearchResultDto searchResultDto) {
         return movieService.autoSaveFromPythonResult(searchResultDto);
     }
+
+    /**
+     * 批量保存电视剧数据
+     * @param request 包含page、results和total_pages等字段的JSON参数
+     * @return 处理结果
+     */
+    @PostMapping("/batchSaveTVShows")
+    public SaResult batchSaveTVShows(@RequestBody TVShowBatchRequest request) {
+        return movieService.batchSaveTVShows(request);
+    }
+    
+    /**
+     * 批量保存电影数据
+     * @param request 包含page、results和total_pages等字段的JSON参数
+     * @return 处理结果
+     */
+    @PostMapping("/batchSaveMovies")
+    public SaResult batchSaveMovies(@RequestBody MovieBatchRequest request) {
+        return movieService.batchSaveMovies(request);
+    }
 }

@@ -13,9 +13,11 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cjh.watching.watchback.dto.MovieBatchRequest;
 import com.cjh.watching.watchback.dto.MovieDto;
 import com.cjh.watching.watchback.dto.MovieQuery;
 import com.cjh.watching.watchback.dto.PythonSearchResultDto;
+import com.cjh.watching.watchback.dto.TVShowBatchRequest;
 import com.cjh.watching.watchback.entity.Movie;
 import com.cjh.watching.watchback.entity.TVShow;
 import com.cjh.watching.watchback.entity.UserMediaCollection;
@@ -23,6 +25,8 @@ import com.cjh.watching.watchback.enums.MovieStatusEnum;
 import com.cjh.watching.watchback.mapper.MovieMapper;
 import com.cjh.watching.watchback.mapper.TVShowMapper;
 import com.cjh.watching.watchback.mapper.UserMediaCollectionMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.cjh.watching.watchback.service.MovieService;
 import com.cjh.watching.watchback.service.UserMediaCollectionService;
 import com.cjh.watching.watchback.utils.ImportResult;
@@ -41,6 +45,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -672,6 +678,77 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
     }
     
     @Override
+    public SaResult batchSaveTVShows(TVShowBatchRequest request) {
+        try {
+            // 参数验证
+            if (request == null || request.getResults() == null || request.getResults().isEmpty()) {
+                return SaResult.error("电视剧数据列表不能为空");
+            }
+            
+            List<TVShow> tvShows = new ArrayList<>();
+            int successCount = 0;
+            int duplicateCount = 0;
+            
+            for (TVShowBatchRequest.TVShowData data : request.getResults()) {
+                // 检查是否已存在相同tmdbId的电视剧
+                TVShow existingTVShow = tvShowMapper.selectOne(new LambdaQueryWrapper<TVShow>()
+                        .eq(TVShow::getTmdbId, data.getId())
+                );
+                
+                if (existingTVShow != null) {
+                    duplicateCount++;
+                    continue;
+                }
+                
+                // 创建新的电视剧记录
+                TVShow tvShow = new TVShow();
+                tvShow.setTmdbId(data.getId());
+                tvShow.setName(data.getName());
+                tvShow.setOriginalName(data.getOriginalName());
+                tvShow.setOverview(data.getOverview());
+                tvShow.setFirstAirDate(data.getFirstAirDate());
+                
+                tvShow.setOriginalLanguage(data.getOriginalLanguage());
+
+                // 处理genreIds，转换为字符串格式
+                if (data.getGenreIds() != null && !data.getGenreIds().isEmpty()) {
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    try {
+                        String genreIdsJson = objectMapper.writeValueAsString(data.getGenreIds());
+                        tvShow.setGenreIds(genreIdsJson);
+                    } catch (Exception e) {
+                        log.warn("转换genreIds为JSON格式时出错，使用默认值", e);
+                        tvShow.setGenreIds("[]");
+                    }
+                } else {
+                    tvShow.setGenreIds("[]");
+                }
+
+                
+                tvShow.setPopularity(data.getPopularity());
+                tvShow.setVoteAverage(data.getVoteAverage());
+                tvShow.setVoteCount(data.getVoteCount());
+                tvShow.setPosterPath(data.getPosterPath());
+                tvShow.setBackdropPath(data.getBackdropPath());
+                tvShow.setSourceApi("batch_import");
+                
+                tvShows.add(tvShow);
+                successCount++;
+            }
+            
+            // 批量保存
+            if (!tvShows.isEmpty()) {
+                tvShowMapper.insert(tvShows); // 使用MyBatis-Plus的批量插入方法
+            }
+            
+            return SaResult.ok("成功保存 " + successCount + " 部电视剧，跳过 " + duplicateCount + " 部已存在的电视剧");
+        } catch (Exception e) {
+            log.error("批量保存电视剧数据失败", e);
+            return SaResult.error("处理失败: " + e.getMessage());
+        }
+    }
+    
+    @Override
     public SaResult manageCollectionStatus(Long mediaId, Integer mediaType, Integer status, Boolean isAdd) {
         try {
             String currentUserId = StpUtil.getLoginIdAsString();
@@ -1034,5 +1111,84 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
             return SaResult.error("保存失败：" + e.getMessage());
         }
     }
-    
+
+    @Override
+    public SaResult batchSaveMovies(MovieBatchRequest request) {
+        try {
+            // 参数验证
+            if (request == null || request.getResults() == null || request.getResults().isEmpty()) {
+                return SaResult.error("电影数据列表不能为空");
+            }
+
+            List<Movie> movies = new ArrayList<>();
+            int successCount = 0;
+            int duplicateCount = 0;
+
+            for (MovieBatchRequest.MovieData data : request.getResults()) {
+                // 检查是否已存在相同tmdbId的电影
+                Movie existingMovie = baseMapper.selectOne(new LambdaQueryWrapper<Movie>()
+                        .eq(Movie::getTmdbId, data.getId())
+                );
+
+                if (existingMovie != null) {
+                    duplicateCount++;
+                    continue;
+                }
+
+                // 创建新的电影记录
+                Movie movie = new Movie();
+                movie.setTmdbId(data.getId());
+                movie.setAdult(data.getAdult() ? 1 : 0);
+                movie.setOriginalLanguage(data.getOriginalLanguage());
+                movie.setOriginalTitle(data.getOriginalTitle());
+                movie.setTitle(data.getTitle());
+                movie.setOverview(data.getOverview());
+                movie.setPosterPath(data.getPosterPath());
+                movie.setBackdropPath(data.getBackdropPath());
+                movie.setPopularity(data.getPopularity());
+                movie.setVoteAverage(data.getVoteAverage());
+                movie.setVoteCount(data.getVoteCount());
+                movie.setVideo(data.getVideo() ? 1 : 0);
+                movie.setIfDel(0); // 默认为不删除
+
+                // 处理releaseDate，转换为LocalDateTime格式
+                if (data.getReleaseDate() != null && !data.getReleaseDate().isEmpty()) {
+                    try {
+                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                        LocalDate releaseDate = LocalDate.parse(data.getReleaseDate(), formatter);
+                        movie.setReleaseDate(releaseDate.atStartOfDay());
+                    } catch (DateTimeParseException e) {
+                        log.warn("解析上映日期失败: {}", data.getReleaseDate(), e);
+                    }
+                }
+
+                // 处理genreIds，转换为字符串格式
+                if (data.getGenreIds() != null && !data.getGenreIds().isEmpty()) {
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    try {
+                        String genreIdsJson = objectMapper.writeValueAsString(data.getGenreIds());
+                        movie.setGenreIds(genreIdsJson);
+                    } catch (Exception e) {
+                        log.warn("转换genreIds为JSON格式时出错，使用默认值", e);
+                        movie.setGenreIds("[]");
+                    }
+                } else {
+                    movie.setGenreIds("[]");
+                }
+
+                movies.add(movie);
+                successCount++;
+            }
+
+            // 批量保存
+            if (!movies.isEmpty()) {
+                this.saveBatch(movies);
+            }
+
+            return SaResult.ok("成功保存 " + successCount + " 部电影，跳过 " + duplicateCount + " 部已存在的电影");
+        } catch (Exception e) {
+            log.error("批量保存电影数据失败", e);
+            return SaResult.error("处理失败: " + e.getMessage());
+        }
+    }
 }

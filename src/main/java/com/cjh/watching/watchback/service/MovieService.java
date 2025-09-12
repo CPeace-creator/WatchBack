@@ -3,9 +3,11 @@ package com.cjh.watching.watchback.service;
 import cn.dev33.satoken.util.SaResult;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.cjh.watching.watchback.dto.MovieBatchRequest;
 import com.cjh.watching.watchback.dto.MovieDto;
 import com.cjh.watching.watchback.dto.MovieQuery;
 import com.cjh.watching.watchback.dto.PythonSearchResultDto;
+import com.cjh.watching.watchback.dto.TVShowBatchRequest;
 import com.cjh.watching.watchback.entity.Movie;
 import com.cjh.watching.watchback.utils.PageRequest;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,6 +53,13 @@ public interface MovieService extends IService<Movie> {
     SaResult batchAddMediaCollection(List<Long> mediaIds, Integer status, Integer mediaType);
     
     /**
+     * 批量保存电视剧数据
+     * @param request 电视剧批量保存请求，包含page、results和total_pages等字段
+     * @return 处理结果
+     */
+    SaResult batchSaveTVShows(TVShowBatchRequest request);
+    
+    /**
      * 管理用户媒体收藏状态（添加/取消标识）
      * @param mediaId 媒体ID
      * @param mediaType 媒体类型 1-电影, 2-电视剧
@@ -75,4 +84,11 @@ public interface MovieService extends IService<Movie> {
      */
     SaResult autoSaveFromPythonResult(PythonSearchResultDto searchResultDto);
 
+
+    /**
+     * 批量保存电影数据
+     * @param request 电影批量保存请求，包含page、results和total_pages等字段
+     * @return 处理结果
+     */
+    SaResult batchSaveMovies(MovieBatchRequest request);
 }

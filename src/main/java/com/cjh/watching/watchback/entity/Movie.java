@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 public class Movie {
     @TableId(type = IdType.AUTO)
     private Long movieId;
-    private String adult;
+    private Integer adult;
     private String originalLanguage;
     private String originalTitle;
     private String title;
@@ -42,11 +42,11 @@ public class Movie {
         this.movieId = movieId;
     }
 
-    public String getAdult() {
+    public Integer getAdult() {
         return adult;
     }
 
-    public void setAdult(String adult) {
+    public void setAdult(Integer adult) {
         this.adult = adult;
     }
 
