@@ -525,6 +525,8 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                         collection.setUpdatedTime(LocalDateTime.now());
                         collections.add(collection);
                         successCount++;
+                    }else{
+                        return SaResult.error("该影片已经看过了");
                     }
                 }
             }
@@ -558,6 +560,8 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
                         collection.setUpdatedTime(LocalDateTime.now());
                         collections.add(collection);
                         successCount++;
+                    }else{
+                        return SaResult.error("该影片已经看过了");
                     }
                 }
             }
@@ -782,7 +786,7 @@ public class MovieServiceImpl extends ServiceImpl<MovieMapper, Movie> implements
             }
 
             if (mediaType == null || (mediaType != 1 && mediaType != 2)) {
-                return SaResult.error("媒体类型参数错误，必须为 1-电视剧, 2-电影");
+                return SaResult.error("媒体类型参数错误，必须为 2-电视剧, 1-电影");
             }
 
             // 调用Python脚本执行器执行movie_scraper_test.py

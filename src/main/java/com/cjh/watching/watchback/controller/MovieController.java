@@ -2,6 +2,7 @@ package com.cjh.watching.watchback.controller;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaIgnore;
+import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.cjh.watching.watchback.dto.*;
@@ -113,7 +114,7 @@ public class MovieController {
     @SaCheckLogin
     @PostMapping("/confirmFuzzyMatches")
     public SaResult confirmFuzzyMatches(@RequestBody FuzzyMatchRequest request) {
-        return movieService.confirmFuzzyMatches(request.getUserId(), request.getSelectedMovies(), request.getSelectedTVShows());
+        return movieService.confirmFuzzyMatches(StpUtil.getLoginIdAsLong(), request.getSelectedMovies(), request.getSelectedTVShows());
     }
     
     /**

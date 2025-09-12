@@ -125,4 +125,51 @@
           AND media_id = #{mediaId}
         ORDER BY status ASC
     </select>
+    
+    <!-- 精确匹配电影标题 -->
+    <select id="findMoviesByExactTitles" resultType="com.cjh.watching.watchback.entity.Movie">
+        SELECT
+            movie_id,
+            tmdb_id,
+            title,
+            original_title,
+            original_language,
+            overview,
+            vote_average,
+            vote_count,
+            popularity,
+            poster_path,
+            backdrop_path,
+            release_date,
+            genre_ids,
+            if_del
+        FROM movies
+        WHERE title IN
+        <foreach item="item" index="index" collection="titles" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        ORDER BY title ASC
+    </select>
+    
+    <!-- 模糊匹配电影标题 -->
+    <select id="findMoviesByFuzzyTitle" resultType="com.cjh.watching.watchback.entity.Movie">
+        SELECT
+            movie_id,
+            tmdb_id,
+            title,
+            original_title,
+            original_language,
+            overview,
+            vote_average,
+            vote_count,
+            popularity,
+            poster_path,
+            backdrop_path,
+            release_date,
+            genre_ids,
+            if_del
+        FROM movies
+        WHERE title LIKE CONCAT('%', #{title}, '%')
+        ORDER BY title ASC
+    </select>
 </mapper>
